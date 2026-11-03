@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}MulitaMiner · job {{ job.id[:8] }}{% endblock %}
+{% block content %}
+<section class="card job" id="job" data-id="{{ job.id }}" data-status="{{ job.status }}">
+  <div class="jobhead">
+    <div>
+      <div class="kick">Job {{ job.id[:8] }} · {{ job.scanner }} · {{ job.model }}</div>
+      <h1 class="status" id="status-h">
+        <span class="dot {{ job.status }}" id="dot"></span><span id="status-t">{{ job.status }}</span>
+      </h1>
+    </div>
+    <div class="meta"><span>updated <b id="updated">{{ job.updated_at[11:19] }}</b> UTC</span></div>
+  </div>
+
+  <div id="wait" {% if job.status in ('done', 'failed') %}hidden{% endif %}>
+    <p class="detail" id="detail">
+      {% if job.status == 'queued' %}
+        {% if job.queue_position %}Position {{ job.queue_position + 1 }} in the queue. One report runs at a time.{% else %}Next in line.{% endif %}
+      {% else %}{{ job.stage or 'starting' }}{% endif %}
+    </p>
+    <div class="bar" id="bar" {% if not job.total_blocks %}data-indeterminate{% endif %}>
+      <div class="fill" id="fill" style="width: {{ (100 * job.done_blocks / job.total_blocks) if job.total_blocks else 0 }}%"></div>
+    </div>
+    <p class="counts" id="counts">{% if job.total_blocks %}{{ job.done_blocks }} / {{ job.total_blocks }} findings{% endif %}</p>
+    <p class="hint">Safe to close this tab. Bookmark this link and come back; the result stays
+    for {{ retention_h }} h. Refreshing does not restart the job.</p>
+  </div>
+
+  <div id="done" {% if job.status != 'done' %}hidden{% endif %}>
+    <div class="tiles">
+      <div class="tile"><div class="v" id="t-records">{{ job.records if job.records is not none else '' }}</div><div class="l">records</div></div>
+      <div class="tile"><div class="v" id="t-blocks">{{ job.total_blocks }}</div><div class="l">findings read</div></div>
+      <div class="tile"><div class="v" id="t-dur">{{ '%d:%02d' % (job.duration_s // 60, job.duration_s % 60) if job.duration_s else '' }}</div><div class="l">min:sec</div></div>
+      <div class="tile"><div class="v" id="t-cost">{{ '$%.4f' % job.cost_usd if job.cost_usd else '0' }}</div><div class="l">est. cost</div></div>
+    </div>
+    <div class="actions">
+      {% for fmt in exports %}
+      <a class="primary" href="/jobs/{{ job.id }}/download/{{ fmt }}">Download {{ fmt | upper }}</a>
+      {% endfor %}
+      <a class="ghost" href="/">Extract another</a>
+    </div>
+  </div>
+
+  <div id="failed" {% if job.status != 'failed' %}hidden{% endif %}>
+    <pre class="err" id="err">{{ job.error or '' }}</pre>
+    <div class="actions"><a class="primary" href="/">Try again</a></div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const root = document.getElementById('job');
+  if (root.dataset.status === 'done' || root.dataset.status === 'failed') return;
+  const $ = id => document.getElementById(id);
+  const tick = async () => {
+    let j;
+    try { j = await (await fetch('/api/jobs/' + root.dataset.id, {cache: 'no-store'})).json(); }
+    catch (e) { return setTimeout(tick, 10000); }
+    if (j.status === 'done' || j.status === 'failed') { location.reload(); return; }
+    $('status-t').textContent = j.status; $('dot').className = 'dot ' + j.status;
+    $('updated').textContent = (j.updated_at || '').slice(11, 19);
+    $('detail').textContent = j.status === 'queued'
+      ? (j.queue_position ? 'Position ' + (j.queue_position + 1) + ' in the queue. One report runs at a time.' : 'Next in line.')
+      : (j.stage || 'starting');
+    const bar = $('bar');
+    if (j.total_blocks) {
+      bar.removeAttribute('data-indeterminate');
+      $('fill').style.width = (100 * j.done_blocks / j.total_blocks) + '%';
+      $('counts').textContent = j.done_blocks + ' / ' + j.total_blocks + ' findings';
+    } else { bar.setAttribute('data-indeterminate', ''); $('counts').textContent = ''; }
+    document.title = 'MulitaMiner · ' + j.status + (j.total_blocks ? ' ' + j.done_blocks + '/' + j.total_blocks : '');
+    setTimeout(tick, 5000);
+  };
+  setTimeout(tick, 3000);
+})();
+</script>
+{% endblock %}

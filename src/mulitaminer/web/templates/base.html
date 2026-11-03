@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}MulitaMiner{% endblock %}</title>
+<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/"><img src="/static/logo.svg" alt=""><span class="word">Mulita<b>Miner</b></span></a>
+  <nav>
+    <a href="https://github.com/INARI18/MulitaMiner2" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/INARI18/MulitaMiner2/blob/main/docs/USAGE.md" target="_blank" rel="noopener">Docs</a>
+    <a href="https://anonshield.org" target="_blank" rel="noopener">AnonShield</a>
+  </nav>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer>
+  <span>MulitaMiner · LLM extraction of vulnerability scanner reports</span>
+  <span>Files and results are deleted after {{ retention_h }} h.</span>
+</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -62,18 +62,23 @@ _BUILTIN_LLM_DIR = Path(__file__).parent / "configs" / "llms"
 _PROFILE_FIELDS = {f.name for f in fields(ModelProfile)}
 
 
-def load_llm_profile(config_path: Path) -> ModelProfile:
-    cfg = json.loads(config_path.read_text(encoding="utf-8"))
+def profile_from_dict(cfg: dict, source: str) -> ModelProfile:
+    """Validate a profile dict (a config file or the web form) into a ModelProfile."""
     unknown = set(cfg) - _PROFILE_FIELDS
     if unknown:
         raise ValueError(
-            f"LLM config {config_path} has unknown field(s) {sorted(unknown)}; "
+            f"LLM config {source} has unknown field(s) {sorted(unknown)}; "
             f"valid fields: {sorted(_PROFILE_FIELDS)}"
         )
     try:
         return ModelProfile(**cfg)
     except TypeError as exc:
-        raise ValueError(f"LLM config {config_path} is invalid: {exc}") from exc
+        raise ValueError(f"LLM config {source} is invalid: {exc}") from exc
+
+
+def load_llm_profile(config_path: Path) -> ModelProfile:
+    cfg = json.loads(config_path.read_text(encoding="utf-8"))
+    return profile_from_dict(cfg, str(config_path))
 
 
 @lru_cache

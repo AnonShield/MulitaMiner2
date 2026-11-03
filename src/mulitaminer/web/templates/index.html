@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}MulitaMiner · extract a scanner report{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="kick">Vulnerability report extraction</div>
+  <h1>Scanner PDF in, spreadsheet out.</h1>
+  <p class="sub">Upload a report from OpenVAS, Nessus, Qualys, Tenable, Acunetix or ZAP. An LLM
+  reads every finding and returns one structured row per vulnerability.</p>
+</section>
+
+{% if error %}<div class="alert" role="alert">{{ error }}</div>{% endif %}
+
+<form class="card form" method="post" action="/jobs" enctype="multipart/form-data" id="form">
+  <div class="col">
+    <label class="lb" for="report">Report</label>
+    <div class="drop" id="drop">
+      <input type="file" id="report" name="report" accept="application/pdf,.pdf" required>
+      <div class="drop-idle">
+        <strong>Drop the PDF here</strong> or <span class="link">browse</span>
+        <small>One PDF, up to {{ max_mb }} MB</small>
+      </div>
+      <div class="drop-file" hidden><span class="fname"></span><span class="fsize"></span></div>
+    </div>
+    <p class="hint">Reports with hundreds of findings take a while (a 150-finding Tenable
+    report is about 40 min on DeepSeek). You get a link to come back to.</p>
+  </div>
+
+  <div class="col">
+    <label class="lb" for="scanner">Scanner</label>
+    <select id="scanner" name="scanner" required>
+      <option value="" disabled {% if not values.scanner %}selected{% endif %}>Which scanner produced it?</option>
+      {% for s in scanners %}
+      <option value="{{ s }}" {% if values.scanner == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+
+    <label class="lb" for="model">Model</label>
+    <select id="model" name="model" required>
+      {% for m in models %}
+      <option value="{{ m.key }}" data-local="{{ 'yes' if m.is_local else 'no' }}"
+        {% if values.model == m.key %}selected{% endif %}>
+        {{ m.key }} · {{ m.model }}{% if m.is_local %} (local, no key){% endif %}
+      </option>
+      {% endfor %}
+      <option value="{{ custom }}" data-local="maybe" {% if values.model == custom %}selected{% endif %}>Custom (OpenAI-compatible endpoint)</option>
+    </select>
+
+    <div id="custom-box" hidden>
+      <label class="lb" for="profile_json">Profile JSON <small>same format as <code>configs/llms/*.json</code></small></label>
+      <textarea id="profile_json" name="profile_json" rows="9" spellcheck="false">{{ values.profile_json or profile_template }}</textarea>
+      <p class="hint">Used for this job only. Leave the key empty for a keyless server.</p>
+    </div>
+
+    <label class="lb" for="api_key">API key <small id="key-note">for cloud models</small></label>
+    <div class="keyrow">
+      <input type="password" id="api_key" name="api_key" autocomplete="off" placeholder="sk-…">
+      <button type="button" class="ghost" id="toggle-key" aria-label="Show key">show</button>
+    </div>
+    <p class="hint">Sent once over HTTPS, held in memory for this job, never stored or logged.
+    Prefer a key with a spending limit.</p>
+
+    <button type="submit" class="primary" id="submit">Extract</button>
+  </div>
+</form>
+
+<section class="steps">
+  <div class="card step"><div class="n">1</div><h3>Segment</h3><p>The PDF is split into one block per finding using the scanner's layout rules, no LLM involved.</p></div>
+  <div class="card step"><div class="n">2</div><h3>Extract</h3><p>Each block goes to the model with a scanner-specific prompt and a strict JSON schema.</p></div>
+  <div class="card step"><div class="n">3</div><h3>Consolidate</h3><p>Duplicates merge, CVSS and references are normalised, and you download XLSX or CSV.</p></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const input = document.getElementById('report');
+  const drop = document.getElementById('drop');
+  const idle = drop.querySelector('.drop-idle');
+  const picked = drop.querySelector('.drop-file');
+  const show = () => {
+    const f = input.files[0];
+    picked.hidden = !f; idle.hidden = !!f;
+    if (f) {
+      picked.querySelector('.fname').textContent = f.name;
+      picked.querySelector('.fsize').textContent = (f.size / 1048576).toFixed(1) + ' MB';
+    }
+  };
+  input.addEventListener('change', show);
+  ['dragenter', 'dragover'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) { input.files = ev.dataTransfer.files; show(); } });
+
+  const model = document.getElementById('model');
+  const key = document.getElementById('api_key');
+  const note = document.getElementById('key-note');
+  const custom = document.getElementById('custom-box');
+  const syncModel = () => {
+    const local = model.selectedOptions[0].dataset.local;
+    custom.hidden = local !== 'maybe';
+    key.disabled = local === 'yes';
+    key.required = local === 'no';
+    note.textContent = local === 'yes' ? 'not needed for a local model'
+                     : local === 'maybe' ? 'leave empty for a keyless server' : 'required for cloud models';
+  };
+  model.addEventListener('change', syncModel); syncModel();
+
+  document.getElementById('toggle-key').addEventListener('click', function () {
+    const hidden = key.type === 'password';
+    key.type = hidden ? 'text' : 'password'; this.textContent = hidden ? 'hide' : 'show';
+  });
+  document.getElementById('form').addEventListener('submit', () => {
+    const b = document.getElementById('submit'); b.disabled = true; b.textContent = 'Uploading…';
+  });
+})();
+</script>
+{% endblock %}
