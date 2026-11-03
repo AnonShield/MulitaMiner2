@@ -23,13 +23,15 @@ RUN if [ "$INSTALL_EVAL" = "true" ]; then \
         && rm -rf /var/lib/apt/lists/*; \
     fi
 
+# The browser front end (docs/WEB.md) is opt-in the same way.
+ARG INSTALL_WEB=false
+
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
-RUN if [ "$INSTALL_EVAL" = "true" ]; then \
-        uv sync --frozen --no-dev --group eval; \
-    else \
-        uv sync --frozen --no-dev; \
-    fi
+RUN groups=""; \
+    if [ "$INSTALL_EVAL" = "true" ]; then groups="$groups --group eval"; fi; \
+    if [ "$INSTALL_WEB" = "true" ]; then groups="$groups --group web"; fi; \
+    uv sync --frozen --no-dev $groups
 
 ENTRYPOINT ["uv", "run", "--no-sync", "mulitaminer"]
 CMD ["--help"]

@@ -171,6 +171,13 @@ docker compose run --rm mulita extract resources/openvas/OpenVAS_JuiceShop.pdf -
 Results land in `outputs/` as usual. API keys, the NVIDIA GPU and the rest
 are in [docs/DOCKER.md](docs/DOCKER.md).
 
+A browser front end for `extract` (upload a PDF, pick scanner and model,
+download the spreadsheet) is in [docs/WEB.md](docs/WEB.md):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.web.yml up web   # http://localhost:8000
+```
+
 ## Evaluation and experiments
 
 Score a finished run against a ground-truth baseline with `evaluate`, or run
@@ -202,6 +209,7 @@ taxonomy and the HTML report are in [docs/EVALUATION.md](docs/EVALUATION.md).
 | [docs/CONFIG.md](docs/CONFIG.md) | API keys, model profiles and tunables |
 | [docs/ADDING_A_MODEL.md](docs/ADDING_A_MODEL.md) | Plug a new LLM, cloud or local |
 | [docs/DOCKER.md](docs/DOCKER.md) | Run the tool and the fine-tuned model with Docker Compose |
+| [docs/WEB.md](docs/WEB.md) | Browser front end: local run and the public deployment behind Caddy |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Pipeline stages, modules and design rules |
 | [docs/SCANNER_CONFIGS.md](docs/SCANNER_CONFIGS.md) | Adding a scanner and the built-in config rationale |
 | [docs/EXPORTS.md](docs/EXPORTS.md) | Export formats, who consumes each, field mapping |

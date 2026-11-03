@@ -27,7 +27,7 @@ the AnonShield Caddy as `mulitaminer.anonshield.org`.
 One Python process: FastAPI serves the pages and the API, a worker thread runs
 one job at a time, a cleanup thread deletes old jobs. No database, no Redis,
 no Node. State is the filesystem under `MULITAMINER_WEB_DATA` (default
-`/data`, a Docker volume).
+`outputs/web`; the compose files set `/data`, a Docker volume).
 
 ```
 browser --HTTPS--> Caddy (Cristhian's) --HTTP--> web:8000

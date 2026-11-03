@@ -1,0 +1,48 @@
+# Public demo: the web app alone, cloud models only, behind the AnonShield
+# Caddy (docs/WEB.md has the Caddyfile block). No Ollama, no published port:
+# Caddy reaches `mulitaminer-web:8000` over the shared Docker network.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  web:
+    container_name: mulitaminer-web
+    build:
+      context: .
+      args:
+        INSTALL_WEB: "true"
+    entrypoint: ["uv", "run", "--no-sync", "uvicorn", "mulitaminer.web.app:app"]
+    command: ["--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+    environment:
+      MULITAMINER_WEB_DATA: /data
+      MULITAMINER_WEB_MODELS: deepseek,gpt-4o-mini,haiku,llama-3.3-70b
+      MULITAMINER_WEB_MAX_MB: "20"
+      MULITAMINER_WEB_RETENTION_H: "24"
+    volumes:
+      - webdata:/data
+    networks:
+      - caddy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health',timeout=5).status==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 2G
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  caddy:
+    external: true
+    # The network AnonShield's Caddy container is on. `docker network ls` on
+    # the server; AnonShield's prod compose names it anon-net under its
+    # Compose project prefix.
+    name: ${CADDY_NETWORK:?set CADDY_NETWORK to the Caddy container's Docker network}
+
+volumes:
+  webdata:

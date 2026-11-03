@@ -1,0 +1,32 @@
+# Browser front end on top of docker-compose.yml: Ollama + the v4 model + the
+# web app, so local models show up in the model list (docs/WEB.md).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.web.yml up web
+#   open http://localhost:8000
+#
+# Cloud keys are typed into the form, never read from .env.
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        INSTALL_WEB: "true"
+    depends_on:
+      model-register:
+        condition: service_completed_successfully
+    network_mode: "service:ollama"   # localhost:11434 reaches Ollama, like `mulita`
+    entrypoint: ["uv", "run", "--no-sync", "uvicorn", "mulitaminer.web.app:app"]
+    command: ["--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      MULITAMINER_WEB_DATA: /data
+    volumes:
+      - webdata:/data
+    restart: unless-stopped
+
+  ollama:
+    ports:
+      - "127.0.0.1:8000:8000"   # the web app shares this netns, so its port is published here
+
+volumes:
+  webdata:
