@@ -20,6 +20,8 @@ services:
     command: ["--host", "0.0.0.0", "--port", "8000"]
     environment:
       MULITAMINER_WEB_DATA: /data
+      # Your own machine: a custom endpoint may point at localhost / the LAN.
+      MULITAMINER_WEB_ALLOW_PRIVATE_URLS: "1"
     volumes:
       - webdata:/data
     restart: unless-stopped

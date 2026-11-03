@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}MulitaMiner{% endblock %}</title>
-<meta name="description" content="MulitaMiner turns vulnerability scanner PDF reports into structured findings with LLMs. Public demo.">
+<meta name="description" content="{{ t.lead }}">
 <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -14,10 +14,13 @@
     <a class="brand" href="/"><img src="/static/logo.svg" alt=""><span class="word">Mulita<b>Miner</b></span></a>
     <nav>
       {% block nav %}
-      <a href="/#how">How it works</a>
-      <a href="/#research">Research</a>
-      <a class="cta" href="/app">Launch app</a>
+      <a href="/#how">{{ t.nav_how }}</a>
+      <a href="/#research">{{ t.nav_research }}</a>
       {% endblock %}
+      <span class="lang" aria-label="Language">
+        {% for l in langs %}<a href="{{ l.url }}" {% if l.code == lang %}aria-current="true"{% endif %}>{{ l.label }}</a>{% endfor %}
+      </span>
+      {% block cta %}<a class="cta" href="/app">{{ t.nav_launch }}</a>{% endblock %}
     </nav>
   </div>
 </header>
@@ -26,12 +29,12 @@
 </main>
 <footer>
   <div class="wrap">
-    <span>MulitaMiner · MIT license · UNIPAMPA</span>
+    <span>MulitaMiner · MIT · UNIPAMPA</span>
     <nav>
       <a href="https://github.com/INARI18/MulitaMiner2" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://huggingface.co/Inari18/mulita-extractor-qwen2.5-1.5b" target="_blank" rel="noopener">Model on Hugging Face</a>
+      <a href="https://huggingface.co/Inari18/mulita-extractor-qwen2.5-1.5b" target="_blank" rel="noopener">{{ t.foot_model }}</a>
       <a href="https://anonshield.org" target="_blank" rel="noopener">AnonShield</a>
-      <span>Uploads are deleted after {{ retention_h }} h</span>
+      <span>{{ t.foot_deleted.format(h=retention_h) }}</span>
     </nav>
   </div>
 </footer>

@@ -5,16 +5,19 @@ is never written to job.json, the run dir, or a log line.
 """
 from __future__ import annotations
 
+import ipaddress
 import json
 import logging
 import queue
 import secrets
 import shutil
+import socket
 import threading
 import time
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from openai import OpenAI
 
@@ -75,13 +78,32 @@ class Job:
         return self.status in ("done", "failed")
 
 
-def custom_profile(cfg: dict, api_key: str | None) -> ModelProfile:
+def _is_private(host: str) -> bool:
+    """True when the host resolves to a loopback, private, link-local or
+    reserved address. Unresolvable hosts pass: the job fails on its own later."""
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        return False
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_unspecified:
+            return True
+    return False
+
+
+def custom_profile(cfg: dict, api_key: str | None, allow_private: bool = False) -> ModelProfile:
     """A ModelProfile from the form's JSON. The key field, not api_key_env,
-    decides whether the provider is keyed."""
+    decides whether the provider is keyed. On a public deployment base_url may
+    not point inside the server's network (SSRF), hence allow_private."""
     if "api_key_env" in cfg:
         raise ValueError("api_key_env is not accepted here; paste the key in the API key field")
-    if not str(cfg.get("base_url", "")).startswith(("http://", "https://")):
-        raise ValueError("base_url must start with http:// or https://")
+    url = urlsplit(str(cfg.get("base_url", "")))
+    if url.scheme not in ("http", "https") or not url.hostname:
+        raise ValueError("base_url must be an http(s) URL with a host")
+    if not allow_private and _is_private(url.hostname):
+        raise ValueError("base_url points to a local or private address; the public demo "
+                         "only reaches public endpoints (run the tool locally for that)")
     profile = profile_from_dict(cfg, "custom profile")
     return replace(profile, api_key_env=FORM_KEY_ENV if api_key else None)
 
@@ -147,6 +169,9 @@ class JobStore:
         """Queued jobs created before this one (0 = next up)."""
         return sum(1 for j in self._jobs.values()
                    if j.status == "queued" and j.created_at < job.created_at)
+
+    def pending(self) -> int:
+        return sum(1 for j in self._jobs.values() if not j.finished)
 
     def purge_older_than(self, hours: float) -> int:
         cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)

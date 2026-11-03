@@ -71,6 +71,18 @@ def test_pages_render(client):
     assert "Profile JSON" in client.get("/app").text
 
 
+def test_language_switch_and_cookie(client):
+    r = client.get("/?lang=pt")
+    assert "Como funciona" in r.text and r.cookies.get("lang") == "pt"
+    assert "Guia" in client.get("/app").text          # the cookie now carries the choice
+    client.cookies.clear()
+    assert "Cómo funciona" in client.get("/", headers={"accept-language": "es-ES,es;q=0.9"}).text
+    r = client.post("/jobs", data={"scanner": "openvas", "model": "custom", "profile_json": "{nope"},
+                    files={"report": ("r.pdf", PDF, "application/pdf")},
+                    headers={"accept-language": "pt-BR"})
+    assert r.status_code == 400 and "Perfil custom" in r.text
+
+
 def test_key_never_touches_disk_or_logs(client, tmp_path, caplog):
     job_id = submit(client).headers["location"].rsplit("/", 1)[1]
     wait_done(client, job_id)
@@ -108,6 +120,34 @@ def test_custom_profile(client, tmp_path):
     bad = submit(client, model="custom", profile_json=json.dumps(cfg | {"api_key_env": "X"}))
     assert bad.status_code == 400
     assert submit(client, model="custom", profile_json="{nope").status_code == 400
+
+
+def test_custom_profile_rejects_private_hosts_on_public_site(client, tmp_path, monkeypatch):
+    for url in ("http://127.0.0.1:11434/v1", "http://localhost:8000/v1", "http://10.0.0.5/v1",
+                "http://169.254.169.254/v1", "ftp://x.example/v1"):
+        cfg = {"key": "m", "model": "m", "base_url": url, "context_window": 10, "max_output_tokens": 5}
+        r = submit(client, model="custom", profile_json=json.dumps(cfg))
+        assert r.status_code == 400, url
+    monkeypatch.setattr(jobs, "pipeline_run", fake_run)
+    with TestClient(create_app(data_dir=tmp_path / "local", models=["deepseek"], allow_private=True)) as c:
+        cfg = {"key": "m", "model": "m", "base_url": "http://localhost:11434/v1",
+               "context_window": 10, "max_output_tokens": 5}
+        assert submit(c, model="custom", profile_json=json.dumps(cfg), api_key="").status_code == 303
+
+
+def test_full_queue_answers_busy(tmp_path, monkeypatch):
+    gate = threading.Event()
+
+    def slow_run(config, client=None, run_dir=None, doc=None, progress=None):
+        gate.wait(5)
+        return fake_run(config, client, run_dir, doc, progress)
+    monkeypatch.setattr(jobs, "pipeline_run", slow_run)
+    with TestClient(create_app(data_dir=tmp_path, models=["deepseek"], max_queue=2)) as c:
+        assert submit(c).status_code == 303
+        assert submit(c).status_code == 303
+        r = submit(c)
+        assert r.status_code == 503 and "queue is full" in r.text
+        gate.set()
 
 
 def test_failed_run_reports_message(client, monkeypatch):

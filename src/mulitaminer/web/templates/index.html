@@ -1,23 +1,20 @@
 {% extends "base.html" %}
-{% block title %}MulitaMiner · structured findings from scanner reports{% endblock %}
+{% block title %}MulitaMiner · {{ t.h1 }}{% endblock %}
 {% block content %}
 <section class="hero">
   <div class="wrap">
-    <span class="badge"><i></i>Public demo · cloud models · bring your own key</span>
-    <h1>Scanner reports in. Structured findings out.</h1>
-    <p class="lead">Vulnerability scanners hand you a PDF: hundreds of findings, each vendor with its own
-    layout and vocabulary. MulitaMiner reads that PDF, isolates every finding, lets an LLM fill one
-    shared record schema, and gives you back one row per vulnerability, with name, severity, CVSS,
-    host, port, solution and references, ready for a spreadsheet, a ticket tracker or a risk queue.</p>
+    <span class="badge"><i></i>{{ t.badge }}</span>
+    <h1>{{ t.h1 }}</h1>
+    <p class="lead">{{ t.lead }}</p>
     <div class="actions">
-      <a class="btn btn-primary btn-lg" href="/app">Extract a report</a>
-      <a class="btn btn-ghost btn-lg" href="#how">How it works</a>
-      <span class="fine">No account · PDF deleted after {{ retention_h }} h · open source</span>
+      <a class="btn btn-primary btn-lg" href="/app">{{ t.cta_extract }}</a>
+      <a class="btn btn-ghost btn-lg" href="#how">{{ t.cta_how }}</a>
+      <span class="fine">{{ t.fine.format(h=retention_h) }}</span>
     </div>
 
-    <div class="demo" aria-label="Example: one OpenVAS finding and the record extracted from it">
+    <div class="demo">
       <div class="pane">
-        <div class="ph">Report text <span>OpenVAS · OWASP Juice Shop · block 0 of 34</span></div>
+        <div class="ph">{{ t.demo_in }} <span>{{ t.demo_in_sub }}</span></div>
 <pre><span class="h">High (CVSS: 7.5)
 NVT: SMTP too long line</span>
 Summary
@@ -34,9 +31,20 @@ Vulnerability Detection Method
 Details: SMTP too long line
 OID:1.3.6.1.4.1.25623.1.0.11270</pre>
       </div>
-      <div class="arrow">→</div>
+      <div class="link" aria-hidden="true">
+        <svg viewBox="0 0 96 120" width="96" height="120">
+          <defs><linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#f39323" stop-opacity=".2"/><stop offset="1" stop-color="#e85d2a"/></linearGradient></defs>
+          <path class="flow" d="M0 60 H96" stroke="url(#lg)" stroke-width="2" fill="none"/>
+          <path class="dots" d="M0 60 H96" stroke="#f39323" stroke-width="2" fill="none" stroke-dasharray="4 10"/>
+          <circle cx="48" cy="60" r="21" fill="#151411" stroke="#e85d2a" stroke-width="1.5"/>
+          <path d="M39 60 h18 M48 51 v18" stroke="#e85d2a" stroke-width="2" stroke-linecap="round" opacity=".0"/>
+          <text x="48" y="64" text-anchor="middle" font-size="11" font-weight="600" fill="#f39323" font-family="JetBrains Mono, monospace">LLM</text>
+          <path d="M92 55 l5 5 -5 5" stroke="#e85d2a" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="lbl">{{ t.demo_link }}</span>
+      </div>
       <div class="pane">
-        <div class="ph">Extracted record <span>one of 34, same schema for every scanner</span></div>
+        <div class="ph">{{ t.demo_out }} <span>{{ t.demo_out_sub }}</span></div>
 <pre>{
   <span class="k">"Name"</span>: <span class="s">"SMTP too long line"</span>,
   <span class="k">"severity"</span>: <span class="s">"HIGH"</span>,
@@ -56,130 +64,122 @@ OID:1.3.6.1.4.1.25623.1.0.11270</pre>
     </div>
 
     <div class="stats">
-      <div class="stat"><div class="v"><em>6</em> scanners</div><div class="l">one record schema</div></div>
-      <div class="stat"><div class="v"><em>90.4%</em></div><div class="l">exact record match, up from 37.5% across V1 to V3</div></div>
-      <div class="stat"><div class="v"><em>1.7%</em></div><div class="l">findings omitted, down from 20.5%</div></div>
-      <div class="stat"><div class="v"><em>1.5B</em></div><div class="l">fine-tuned local model, runs offline</div></div>
-      <div class="stat"><div class="v"><em>6</em> exports</div><div class="l">XLSX, CSV, SARIF, CSAF, DefectDojo, CAIS</div></div>
+      <div class="stat"><div class="v"><em>6</em> {{ t.stat_scanners }}</div><div class="l">{{ t.stat_scanners_l }}</div></div>
+      <div class="stat"><div class="v"><em>90.4%</em></div><div class="l">{{ t.stat_match_l }}</div></div>
+      <div class="stat"><div class="v"><em>1.7%</em></div><div class="l">{{ t.stat_omit_l }}</div></div>
+      <div class="stat"><div class="v"><em>1.5B</em></div><div class="l">{{ t.stat_local_l }}</div></div>
+      <div class="stat"><div class="v"><em>6</em> {{ t.stat_exports }}</div><div class="l">{{ t.stat_exports_l }}</div></div>
     </div>
-    <p class="src">Match and omission figures: 450 runs, five LLMs, three curated OpenVAS baselines (SBSeg 2026, below).</p>
+    <p class="src">{{ t.stat_src }}</p>
   </div>
 </section>
 
 <section class="block" id="how">
   <div class="wrap">
-    <div class="kick">How it works</div>
-    <h2>Five stages. The LLM only touches one of them.</h2>
-    <p class="sub">Segmentation decides how many findings there are before any model call, so a finding can be
-    extracted badly, but never silently lost. Click a stage to inspect it.</p>
+    <div class="kick">{{ t.how_kick }}</div>
+    <h2>{{ t.how_h2 }}</h2>
+    <p class="sub">{{ t.how_sub }}</p>
     <div class="stages" role="tablist">
-      <button class="stage" role="tab" aria-selected="true" data-i="0"><div class="n">01</div><h3>Read</h3><p>PDF → text</p></button>
-      <button class="stage" role="tab" aria-selected="false" data-i="1"><div class="n">02</div><h3>Segment</h3><p>one block per finding</p></button>
-      <button class="stage" role="tab" aria-selected="false" data-i="2"><div class="n">03</div><h3>Extract</h3><p>LLM, strict JSON schema</p></button>
-      <button class="stage" role="tab" aria-selected="false" data-i="3"><div class="n">04</div><h3>Consolidate</h3><p>pair, normalise, merge</p></button>
-      <button class="stage" role="tab" aria-selected="false" data-i="4"><div class="n">05</div><h3>Export</h3><p>6 formats</p></button>
+      <button class="stage" role="tab" aria-selected="true" data-i="0">
+        <svg viewBox="0 0 120 56"><rect x="6" y="6" width="34" height="44" rx="3" class="st"/><path d="M12 16h22M12 24h22M12 32h14" class="ln"/><path d="M48 28h18" class="ar"/><path d="M74 14h40M74 24h40M74 34h28M74 44h36" class="ln2"/></svg>
+        <div class="n">01</div><h3>{{ t.s1 }}</h3><p>{{ t.s1_t }}</p></button>
+      <button class="stage" role="tab" aria-selected="false" data-i="1">
+        <svg viewBox="0 0 120 56"><rect x="6" y="4" width="108" height="14" rx="2" class="blk"/><rect x="6" y="21" width="108" height="14" rx="2" class="blk"/><rect x="6" y="38" width="108" height="14" rx="2" class="blk"/><text x="12" y="14" class="tx">#0</text><text x="12" y="31" class="tx">#1</text><text x="12" y="48" class="tx">#2</text><path d="M34 11h60M34 28h60M34 45h44" class="ln"/></svg>
+        <div class="n">02</div><h3>{{ t.s2 }}</h3><p>{{ t.s2_t }}</p></button>
+      <button class="stage" role="tab" aria-selected="false" data-i="2">
+        <svg viewBox="0 0 120 56"><rect x="6" y="16" width="34" height="24" rx="2" class="blk"/><text x="12" y="31" class="tx">#0</text><path d="M46 28h14" class="ar"/><circle cx="60" cy="28" r="9" class="node"/><text x="60" y="31" text-anchor="middle" class="tx2">LLM</text><path d="M72 28h10" class="ar"/><text x="86" y="22" class="br">{</text><path d="M94 16h18M94 24h14M94 32h18" class="ln2"/><text x="86" y="44" class="br">}</text></svg>
+        <div class="n">03</div><h3>{{ t.s3 }}</h3><p>{{ t.s3_t }}</p></button>
+      <button class="stage" role="tab" aria-selected="false" data-i="3">
+        <svg viewBox="0 0 120 56"><rect x="6" y="6" width="36" height="18" rx="2" class="blk"/><rect x="6" y="32" width="36" height="18" rx="2" class="blk"/><text x="11" y="18" class="tx">:80</text><text x="11" y="44" class="tx">:443</text><path d="M46 15 Q58 15 64 28 M46 41 Q58 41 64 28 M64 28h12" class="ar"/><rect x="80" y="16" width="34" height="24" rx="2" class="blk on"/><text x="86" y="31" class="tx">:80,443</text></svg>
+        <div class="n">04</div><h3>{{ t.s4 }}</h3><p>{{ t.s4_t }}</p></button>
+      <button class="stage" role="tab" aria-selected="false" data-i="4">
+        <svg viewBox="0 0 120 56"><rect x="6" y="18" width="30" height="20" rx="2" class="blk on"/><path d="M40 28h12" class="ar"/><rect x="56" y="4" width="26" height="12" rx="2" class="blk"/><rect x="56" y="22" width="26" height="12" rx="2" class="blk"/><rect x="56" y="40" width="26" height="12" rx="2" class="blk"/><rect x="88" y="13" width="26" height="12" rx="2" class="blk"/><rect x="88" y="31" width="26" height="12" rx="2" class="blk"/><text x="59" y="13" class="tx">XLSX</text><text x="60" y="31" class="tx">CSV</text><text x="58" y="49" class="tx">SARIF</text><text x="91" y="22" class="tx">CSAF</text><text x="91" y="40" class="tx">CAIS</text></svg>
+        <div class="n">05</div><h3>{{ t.s5 }}</h3><p>{{ t.s5_t }}</p></button>
     </div>
     <div class="card stage-detail" id="stage-detail">
-      <div data-i="0"><p><b>Read.</b> The PDF text is extracted page by page (pypdfium2) and cleaned: headers, footers and page numbers that would otherwise split a finding in two are removed.</p><p>Nothing is OCR'd; scanner exports are born digital.</p></div>
-      <div data-i="1" hidden><p><b>Segment.</b> A scanner profile is a JSON file with the regular expression that opens a finding in that vendor's layout (for OpenVAS, a severity line followed by <code>NVT:</code>) and where the host and port live. The profile cuts the text into blocks, one per finding, and numbers them.</p><p>No LLM is involved, so the count is exact and repeatable. Adding a scanner means adding one JSON file.</p></div>
-      <div data-i="2" hidden><p><b>Extract.</b> Blocks are packed into token-budgeted chunks and sent to the model with the scanner's prompt and a JSON schema derived from the record type. The model must return exactly one record per block id.</p><p>Missing ids are re-sent in smaller groups (4, then 2, then 1); unknown or duplicate ids are dropped with a warning. Every drop is declared in the run log, never silent.</p></div>
-      <div data-i="3" hidden><p><b>Consolidate.</b> Records that belong to the same finding (one vulnerability on several ports, or a scanner that splits a finding across pages) are paired and merged. Severity labels and CVSS are normalised, references deduplicated.</p><p>The pre-consolidation records are kept, so every merge decision can be audited.</p></div>
-      <div data-i="4" hidden><p><b>Export.</b> The same records serialise to XLSX and CSV for people, and to SARIF 2.1.0, CSAF 2.0, DefectDojo Generic JSON and CAIS for tools. The web demo offers the first two; the CLI has all six, plus a KEV/EPSS/SSVC remediation queue.</p></div>
+      <p data-i="0"><b>{{ t.s1 }}.</b> {{ t.s1_d }}</p>
+      <p data-i="1" hidden><b>{{ t.s2 }}.</b> {{ t.s2_d }}</p>
+      <p data-i="2" hidden><b>{{ t.s3 }}.</b> {{ t.s3_d }}</p>
+      <p data-i="3" hidden><b>{{ t.s4 }}.</b> {{ t.s4_d }}</p>
+      <p data-i="4" hidden><b>{{ t.s5 }}.</b> {{ t.s5_d }}</p>
     </div>
   </div>
 </section>
 
 <section class="block" id="support">
   <div class="wrap">
-    <div class="kick">Supported</div>
-    <h2>Six scanners, your choice of model.</h2>
+    <div class="kick">{{ t.sup_kick }}</div>
+    <h2>{{ t.sup_h2 }}</h2>
     <div class="support">
-      <div class="card">
-        <h3>Scanners</h3>
+      <div class="card"><h3>{{ t.sup_scanners }}</h3>
         <div class="chips">{% for s in scanner_labels %}<span class="chip on">{{ s }}</span>{% endfor %}</div>
-        <p>Each one is a JSON profile: a regex for where a finding starts, where the host is, and a prompt. Your own scanner is one more file.</p>
-      </div>
-      <div class="card">
-        <h3>Models</h3>
-        <div class="chips">{% for m in model_labels %}<span class="chip">{{ m }}</span>{% endfor %}<span class="chip">any OpenAI-compatible endpoint</span></div>
-        <p>Cloud models with your own key, or a local server (Ollama, LM Studio, vLLM) when you run the tool yourself. The public demo is cloud only.</p>
-      </div>
-      <div class="card">
-        <h3>Exports</h3>
-        <div class="chips"><span class="chip">XLSX</span><span class="chip">CSV</span><span class="chip">SARIF 2.1.0</span><span class="chip">CSAF 2.0</span><span class="chip">DefectDojo</span><span class="chip">CAIS</span></div>
-        <p>The schema is the same for every scanner, so a Nessus export and an OpenVAS export land in the same columns.</p>
-      </div>
+        <p>{{ t.sup_scanners_p }}</p></div>
+      <div class="card"><h3>{{ t.sup_models }}</h3>
+        <div class="chips">{% for m in model_labels %}<span class="chip">{{ m }}</span>{% endfor %}<span class="chip">{{ t.sup_any }}</span></div>
+        <p>{{ t.sup_models_p }}</p></div>
+      <div class="card"><h3>{{ t.sup_exports }}</h3>
+        <div class="chips"><span class="chip">XLSX</span><span class="chip">CSV</span><span class="chip">JSON</span><span class="chip">SARIF 2.1.0</span><span class="chip">CSAF 2.0</span><span class="chip">DefectDojo</span><span class="chip">CAIS</span></div>
+        <p>{{ t.sup_exports_p }}</p></div>
     </div>
   </div>
 </section>
 
 <section class="block" id="research">
   <div class="wrap">
-    <div class="kick">Research</div>
-    <h2>Four papers, one pipeline.</h2>
-    <p class="sub">MulitaMiner is a research project at UNIPAMPA. Each version of the tool was evaluated against
-    hand-curated ground truth and published.</p>
+    <div class="kick">{{ t.res_kick }}</div>
+    <h2>{{ t.res_h2 }}</h2>
+    <p class="sub">{{ t.res_sub }}</p>
     <div class="timeline">
-      <div class="tl">
+      <div class="tl"><div class="yr">2025</div><div class="rail"><i></i></div>
         <div class="card">
-          <div class="meta"><span class="yr">2025</span><span>WRSEG 2025</span><span class="award">2nd Best Paper</span></div>
+          <div class="meta"><span>{{ t.p1_v }}</span><span class="award">{{ t.p1_a }}</span></div>
           <h3>Structured Extraction of Vulnerabilities in OpenVAS and Tenable WAS Reports Using LLMs</h3>
-          <p>The first method: an LLM turns OpenVAS and Tenable WAS findings into a standard format for risk management. On 34 vulnerabilities, GPT-4.1 and DeepSeek came closest to the baseline (ROUGE-L above 0.7).</p>
-          <div class="links"><a href="https://sol.sbc.org.br/index.php/errc/article/view/39195" target="_blank" rel="noopener">Paper ↗</a></div>
-        </div>
-      </div>
-      <div class="tl">
+          <p>{{ t.p1_d }}</p>
+          <div class="links"><a href="https://sol.sbc.org.br/index.php/errc/article/view/39195" target="_blank" rel="noopener">{{ t.paper }} ↗</a></div>
+        </div></div>
+      <div class="tl"><div class="yr">2026</div><div class="rail"><i></i></div>
         <div class="card">
-          <div class="meta"><span class="yr">2026</span><span>Zenodo · tool release</span></div>
+          <div class="meta"><span>{{ t.p2_v }}</span></div>
           <h3>MulitaMiner: Transforming Heterogeneous Technical Reports into Structured Data Using LLMs</h3>
-          <p>The tool itself, evaluated with semantic similarity metrics (ROUGE-L, BERTScore) on 6,700 vulnerabilities from 129 OpenVAS reports of Docker Hub containers.</p>
-          <div class="links"><a href="https://zenodo.org/records/19539374" target="_blank" rel="noopener">Record ↗</a><a href="https://github.com/INARI18/MulitaMiner2" target="_blank" rel="noopener">Code ↗</a></div>
-        </div>
-      </div>
-      <div class="tl">
+          <p>{{ t.p2_d }}</p>
+          <div class="links"><a href="https://zenodo.org/records/19539374" target="_blank" rel="noopener">{{ t.record }} ↗</a><a href="https://github.com/INARI18/MulitaMiner2" target="_blank" rel="noopener">{{ t.code }} ↗</a></div>
+        </div></div>
+      <div class="tl"><div class="yr"></div><div class="rail"><i></i></div>
         <div class="card">
-          <div class="meta"><span class="yr">2026</span><span>SBSeg 2026</span></div>
+          <div class="meta"><span>{{ t.p3_v }}</span></div>
           <h3>MulitaMiner: A Multi-Version Evaluation of LLM-Based Vulnerability Report Extraction</h3>
-          <p>Three versions of the pipeline (functional baseline, scanner-aware segmentation, per-LLM tuning with few-shot prompts) over 450 runs with five LLMs. Exact record match rises from 37.5% to 90.4% and omission falls from 20.5% to 1.7%: pipeline engineering, not model substitution, is the lever.</p>
-          <div class="links"><a href="https://sol.sbc.org.br/index.php/sbseg/article/view/44328" target="_blank" rel="noopener">Paper ↗</a></div>
-        </div>
-      </div>
-      <div class="tl now">
+          <p>{{ t.p3_d }}</p>
+          <div class="links"><a href="https://sol.sbc.org.br/index.php/sbseg/article/view/44328" target="_blank" rel="noopener">{{ t.paper }} ↗</a></div>
+        </div></div>
+      <div class="tl now"><div class="yr"></div><div class="rail"><i></i></div>
         <div class="card">
-          <div class="meta"><span class="yr">2026</span><span>SBSeg 2026</span><span class="award">All 4 CTA artifact badges</span><span class="yr">← latest</span></div>
+          <div class="meta"><span>{{ t.p4_v }}</span><span class="award">{{ t.p4_a }}</span><span class="now">● {{ t.p4_now }}</span></div>
           <h3>On-Premise vs. Cloud: Local LLMs for Vulnerability Extraction from Security Scanner Reports</h3>
-          <p>A scan report maps an organisation's attack surface, so sending it to a cloud API trades confidentiality for accuracy. Nine local models (4B to 21B) against a DeepSeek reference: the best local model, on a consumer GPU, trails the cloud by 1.2 points in free-text fidelity and matches it on structured fields. The fine-tuned 1.5B model in the repository comes out of this line of work.</p>
-          <div class="links"><a href="https://doi.org/10.5753/sbseg_estendido.2026.29879" target="_blank" rel="noopener">Paper ↗</a><a href="https://huggingface.co/Inari18/mulita-extractor-qwen2.5-1.5b" target="_blank" rel="noopener">Model ↗</a></div>
-        </div>
-      </div>
+          <p>{{ t.p4_d }}</p>
+          <div class="links"><a href="https://doi.org/10.5753/sbseg_estendido.2026.29879" target="_blank" rel="noopener">{{ t.paper }} ↗</a><a href="https://huggingface.co/Inari18/mulita-extractor-qwen2.5-1.5b" target="_blank" rel="noopener">{{ t.model }} ↗</a></div>
+        </div></div>
     </div>
   </div>
 </section>
 
 <section class="block" id="sister">
   <div class="wrap">
-    <div class="kick">Sister project</div>
-    <h2>Sensitive report? Pseudonymize it first.</h2>
+    <div class="kick">{{ t.sis_kick }}</div>
+    <h2>{{ t.sis_h2 }}</h2>
     <div class="sister">
-      <div class="card">
-        <h3>AnonShield</h3>
-        <p>On-premise pseudonymization for CSIRT vulnerability data, from the same research group (SBRC 2026 Best Artifact). Run the PDF through AnonShield on your machine, then upload the pseudonymized copy here: hosts and names become stable tokens, the findings stay intact.</p>
-        <a class="btn btn-ghost" href="https://anonshield.org" target="_blank" rel="noopener">anonshield.org ↗</a>
-      </div>
-      <div class="card">
-        <h3>Or keep everything local</h3>
-        <p>MulitaMiner is a CLI first. Install it, point it at a local model (Ollama, LM Studio, any OpenAI-compatible server) and nothing leaves your network. The same web interface runs locally with Docker Compose, with the fine-tuned model included.</p>
-        <a class="btn btn-ghost" href="https://github.com/INARI18/MulitaMiner2/blob/main/docs/WEB.md" target="_blank" rel="noopener">Run it yourself ↗</a>
-      </div>
+      <div class="card"><h3>AnonShield</h3><p>{{ t.sis_anon_p }}</p>
+        <a class="btn btn-ghost" href="https://anonshield.org" target="_blank" rel="noopener">anonshield.org ↗</a></div>
+      <div class="card"><h3>{{ t.sis_local }}</h3><p>{{ t.sis_local_p }}</p>
+        <a class="btn btn-ghost" href="https://github.com/INARI18/MulitaMiner2/blob/main/docs/WEB.md" target="_blank" rel="noopener">{{ t.sis_local_btn }} ↗</a></div>
     </div>
   </div>
 </section>
 
 <div class="wrap">
   <section class="closing">
-    <h2>Try it on a report.</h2>
-    <p>Pick the scanner, pick a model, paste your key. Small reports take under a minute; you get a link to come back to for the big ones.</p>
-    <a class="btn btn-primary btn-lg" href="/app">Launch the app</a>
+    <h2>{{ t.close_h2 }}</h2>
+    <p>{{ t.close_p }}</p>
+    <a class="btn btn-primary btn-lg" href="/app">{{ t.close_btn }}</a>
     <br>
     <pre><b>git clone</b> https://github.com/INARI18/MulitaMiner2.git && cd MulitaMiner2 && uv sync
 <b>uv run mulitaminer extract</b> report.pdf -s openvas -m deepseek --xlsx</pre>
@@ -191,7 +191,7 @@ OID:1.3.6.1.4.1.25623.1.0.11270</pre>
 <script>
 (function () {
   const tabs = document.querySelectorAll('.stage');
-  const panes = document.querySelectorAll('#stage-detail > div');
+  const panes = document.querySelectorAll('#stage-detail > p');
   tabs.forEach(t => t.addEventListener('click', () => {
     tabs.forEach(x => x.setAttribute('aria-selected', x === t ? 'true' : 'false'));
     panes.forEach(p => p.hidden = p.dataset.i !== t.dataset.i);

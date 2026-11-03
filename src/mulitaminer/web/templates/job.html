@@ -1,71 +1,69 @@
 {% extends "base.html" %}
-{% block title %}MulitaMiner · job {{ job.id[:8] }}{% endblock %}
+{% block title %}MulitaMiner · {{ t.job }} {{ job.id[:8] }}{% endblock %}
 {% block nav %}
-<a href="/">← Home</a>
-<a class="cta" href="/app">New extraction</a>
+<a href="/">{{ t.nav_home }}</a>
 {% endblock %}
+{% block cta %}<a class="cta" href="/app">{{ t.nav_new }}</a>{% endblock %}
 {% block content %}
 <div class="jobwrap">
 <section class="card job" id="job" data-id="{{ job.id }}" data-status="{{ job.status }}">
   <div class="jobhead">
     <div>
-      <div class="kick">Job {{ job.id[:8] }} · {{ job.scanner }} · {{ job.model_label }}</div>
+      <div class="kick">{{ t.job }} {{ job.id[:8] }} · {{ job.scanner }} · {{ job.model_label }}</div>
       <h1 class="status" id="status-h">
-        <span class="dot {{ job.status }}" id="dot"></span><span id="status-t">{{ job.status }}</span>
+        <span class="dot {{ job.status }}" id="dot"></span><span id="status-t">{{ t['st_' + job.status] }}</span>
       </h1>
     </div>
-    <div class="meta"><span>updated <b id="updated">{{ job.updated_at[11:19] }}</b> UTC</span></div>
+    <div class="meta"><span>{{ t.updated }} <b id="updated">{{ job.updated_at[11:19] }}</b> UTC</span></div>
   </div>
 
   <div id="wait" {% if job.status in ('done', 'failed') %}hidden{% endif %}>
     <p class="detail" id="detail">
-      {% if job.status == 'queued' %}
-        {% if job.queue_position %}Position {{ job.queue_position + 1 }} in the queue. One report runs at a time.{% else %}Next in line.{% endif %}
-      {% else %}{{ job.stage or 'starting' }}{% endif %}
+      {% if job.status == 'queued' %}{% if job.queue_position %}{{ t.q_pos.format(n=job.queue_position + 1) }}{% else %}{{ t.q_next }}{% endif %}
+      {% else %}{{ t.get('stage_' + job.stage, job.stage or t.starting) }}{% endif %}
     </p>
     <div class="bar" id="bar" {% if not job.total_blocks %}data-indeterminate{% endif %}>
       <div class="fill" id="fill" style="width: {{ (100 * job.done_blocks / job.total_blocks) if job.total_blocks else 0 }}%"></div>
     </div>
-    <p class="counts" id="counts">{% if job.total_blocks %}{{ job.done_blocks }} / {{ job.total_blocks }} findings{% endif %}</p>
-    <p class="hint">Safe to close this tab. Bookmark this link and come back; the result stays
-    for {{ retention_h }} h. Refreshing does not restart the job.</p>
+    <p class="counts" id="counts">{% if job.total_blocks %}{{ job.done_blocks }} / {{ job.total_blocks }} {{ t.findings }}{% endif %}</p>
+    <p class="hint">{{ t.j_safe.format(h=retention_h) }}</p>
   </div>
 
   <div id="done" {% if job.status != 'done' %}hidden{% endif %}>
     <div class="tiles">
-      <div class="tile"><div class="v">{{ job.records if job.records is not none else '' }}</div><div class="l">records</div></div>
-      <div class="tile"><div class="v">{{ job.total_blocks }}</div><div class="l">findings read</div></div>
-      <div class="tile"><div class="v">{{ '%d:%02d' % (job.duration_s // 60, job.duration_s % 60) if job.duration_s else '' }}</div><div class="l">min:sec</div></div>
-      <div class="tile"><div class="v">{{ '$%.4f' % job.cost_usd if job.cost_usd else '0' }}</div><div class="l">est. cost</div></div>
+      <div class="tile"><div class="v">{{ job.records if job.records is not none else '' }}</div><div class="l">{{ t.t_records }}</div></div>
+      <div class="tile"><div class="v">{{ job.total_blocks }}</div><div class="l">{{ t.t_blocks }}</div></div>
+      <div class="tile"><div class="v">{{ '%d:%02d' % (job.duration_s // 60, job.duration_s % 60) if job.duration_s else '' }}</div><div class="l">{{ t.t_dur }}</div></div>
+      <div class="tile"><div class="v">{{ '$%.4f' % job.cost_usd if job.cost_usd else '0' }}</div><div class="l">{{ t.t_cost }}</div></div>
     </div>
     <div class="actions">
-      <a class="btn btn-primary" href="/jobs/{{ job.id }}/download/xlsx">Download XLSX</a>
-      <a class="btn btn-primary" href="/jobs/{{ job.id }}/download/csv">Download CSV</a>
-      <a class="btn btn-ghost" href="/app">Extract another</a>
+      <a class="btn btn-primary" href="/jobs/{{ job.id }}/download/xlsx">{{ t.dl }} XLSX</a>
+      <a class="btn btn-primary" href="/jobs/{{ job.id }}/download/csv">{{ t.dl }} CSV</a>
+      <a class="btn btn-ghost" href="/app">{{ t.j_another }}</a>
     </div>
-    <p class="lb" style="margin-top:1.3rem">Also available · for tools</p>
+    <p class="lb" style="margin-top:1.3rem">{{ t.j_also }}</p>
     <div class="chips">
       {% for slug, (file, label) in downloads.items() if slug not in ('xlsx', 'csv') %}
       <a class="chip" href="/jobs/{{ job.id }}/download/{{ slug }}" style="text-decoration:none">{{ label }} ↓</a>
       {% endfor %}
     </div>
-    <p class="hint">SARIF for GitHub code scanning and SonarQube, CSAF 2.0 for CSIRT advisories, DefectDojo Generic Findings for import, CAIS for the institutional schema. Same records, different serialisation.</p>
+    <p class="hint">{{ t.j_also_p }}</p>
   </div>
 
   <div id="failed" {% if job.status != 'failed' %}hidden{% endif %}>
     <pre class="err" id="err">{{ job.error or '' }}</pre>
-    <div class="actions"><a class="btn btn-primary" href="/app">Try again</a></div>
+    <div class="actions"><a class="btn btn-primary" href="/app">{{ t.j_retry }}</a></div>
   </div>
 </section>
 
 <section class="card jobsteps">
-  <h3>What the job does</h3>
+  <h3>{{ t.j_steps }}</h3>
   <ol id="steps">
-    <li data-s="reading"><b>Read</b> the PDF text.</li>
-    <li data-s="segmenting"><b>Segment</b> it into one block per finding with the {{ job.scanner }} profile. This fixes the finding count.</li>
-    <li data-s="extracting"><b>Extract</b>: each block goes to the model, which returns one JSON record per block id. Missing ones are retried in smaller groups.</li>
-    <li data-s="consolidating"><b>Consolidate</b> duplicates and normalise severity and CVSS.</li>
-    <li data-s="exporting"><b>Export</b> XLSX and CSV, one row per finding.</li>
+    <li data-s="reading">{{ t.js_1 }}</li>
+    <li data-s="segmenting">{{ t.js_2.format(s=job.scanner) }}</li>
+    <li data-s="extracting">{{ t.js_3 }}</li>
+    <li>{{ t.js_4 }}</li>
+    <li>{{ t.js_5 }}</li>
   </ol>
 </section>
 </div>
@@ -74,6 +72,7 @@
 {% block scripts %}
 <script>
 (function () {
+  const T = {{ tjs | tojson }};
   const root = document.getElementById('job');
   const $ = id => document.getElementById(id);
   const mark = stage => document.querySelectorAll('#steps li').forEach(li => li.classList.toggle('cur', li.dataset.s === stage));
@@ -84,19 +83,19 @@
     try { j = await (await fetch('/api/jobs/' + root.dataset.id, {cache: 'no-store'})).json(); }
     catch (e) { return setTimeout(tick, 10000); }
     if (j.status === 'done' || j.status === 'failed') { location.reload(); return; }
-    $('status-t').textContent = j.status; $('dot').className = 'dot ' + j.status;
+    $('status-t').textContent = T['st_' + j.status]; $('dot').className = 'dot ' + j.status;
     $('updated').textContent = (j.updated_at || '').slice(11, 19);
     $('detail').textContent = j.status === 'queued'
-      ? (j.queue_position ? 'Position ' + (j.queue_position + 1) + ' in the queue. One report runs at a time.' : 'Next in line.')
-      : (j.stage || 'starting');
+      ? (j.queue_position ? T.q_pos.replace('{n}', j.queue_position + 1) : T.q_next)
+      : (T['stage_' + j.stage] || j.stage || T.starting);
     mark(j.status === 'running' ? j.stage : '');
     const bar = $('bar');
     if (j.total_blocks) {
       bar.removeAttribute('data-indeterminate');
       $('fill').style.width = (100 * j.done_blocks / j.total_blocks) + '%';
-      $('counts').textContent = j.done_blocks + ' / ' + j.total_blocks + ' findings';
+      $('counts').textContent = j.done_blocks + ' / ' + j.total_blocks + ' ' + T.findings;
     } else { bar.setAttribute('data-indeterminate', ''); $('counts').textContent = ''; }
-    document.title = 'MulitaMiner · ' + j.status + (j.total_blocks ? ' ' + j.done_blocks + '/' + j.total_blocks : '');
+    document.title = 'MulitaMiner · ' + T['st_' + j.status] + (j.total_blocks ? ' ' + j.done_blocks + '/' + j.total_blocks : '');
     setTimeout(tick, 5000);
   };
   setTimeout(tick, 3000);

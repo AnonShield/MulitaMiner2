@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 
 from mulitaminer.llm import ModelProfile, all_models
 from mulitaminer.scanner_engine import all_scanners
+from mulitaminer.web.i18n import LANGS, pick_lang, strings
 from mulitaminer.web.jobs import DOWNLOADS, Cleaner, JobStore, Worker, custom_profile
 
 HERE = Path(__file__).parent
@@ -43,14 +44,20 @@ PROVIDERS = {
     "CLAUDE_API_KEY": ("Anthropic", "https://console.anthropic.com/settings/keys"),
 }
 SCANNERS = {
-    "openvas": ("OpenVAS / Greenbone", "Greenbone Security Assistant, the scan's PDF report"),
-    "nessus": ("Tenable Nessus", "Nessus Professional or Essentials, PDF export"),
-    "tenable": ("Tenable Web App Scanning", "Tenable WAS (tenable.io), detailed scan export"),
-    "tenable-vm": ("Tenable Vulnerability Management", "Tenable VM, 'Vulnerabilities by Asset' report"),
+    "openvas": ("OpenVAS / Greenbone", "Greenbone Security Assistant, PDF report"),
+    "nessus": ("Tenable Nessus", "Nessus Professional / Essentials, PDF export"),
+    "tenable": ("Tenable Web App Scanning", "Tenable WAS, detailed scan export"),
+    "tenable-vm": ("Tenable Vulnerability Management", "Tenable VM, 'Vulnerabilities by Asset'"),
     "qualys": ("Qualys", "Qualys VMDR scan report"),
     "acunetix": ("Acunetix 360", "Acunetix 360 / Invicti scan report"),
     "zap": ("OWASP ZAP", "ZAP traditional report, printed to PDF"),
 }
+# Strings the page scripts need (file checks, model switch, job polling).
+JS_KEYS = ("err_not_pdf", "err_too_big", "f_custom_id", "f_modelid", "f_served_local",
+           "f_key_local", "f_key_custom", "f_key_req", "f_key_hint", "f_get_key", "show",
+           "hide", "f_uploading", "st_queued", "st_running", "st_done", "st_failed", "q_pos",
+           "q_next", "starting", "findings", "stage_reading", "stage_segmenting",
+           "stage_extracting")
 
 
 def _env_models() -> list[str]:
@@ -70,11 +77,18 @@ def scanner_view(key: str) -> dict:
 
 
 def create_app(data_dir: Path | None = None, models: list[str] | None = None,
-               max_mb: float | None = None, retention_h: float | None = None) -> FastAPI:
+               max_mb: float | None = None, retention_h: float | None = None,
+               max_queue: int | None = None, allow_private: bool | None = None) -> FastAPI:
     data_dir = data_dir or Path(os.getenv("MULITAMINER_WEB_DATA", "outputs/web"))
     models = models or _env_models() or sorted(all_models())
     max_bytes = int((max_mb or float(os.getenv("MULITAMINER_WEB_MAX_MB", "20"))) * 1024 * 1024)
     retention_h = retention_h or float(os.getenv("MULITAMINER_WEB_RETENTION_H", "24"))
+    # Pending jobs (queued + running) accepted before the form answers "busy".
+    max_queue = max_queue or int(os.getenv("MULITAMINER_WEB_MAX_QUEUE", "20"))
+    # Custom base_url may reach localhost / the Docker network only when the
+    # user runs the app themselves (docker-compose.web.yml sets it).
+    if allow_private is None:
+        allow_private = os.getenv("MULITAMINER_WEB_ALLOW_PRIVATE_URLS", "") == "1"
     unknown = [m for m in models if m not in all_models()]
     if unknown:
         raise ValueError(f"MULITAMINER_WEB_MODELS names unknown profile(s) {unknown}")
@@ -95,51 +109,66 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
     templates = Jinja2Templates(directory=HERE / "templates")
     app.state.store = store   # tests reach the store through here
 
-    def base_context(request: Request) -> dict:
-        return {"request": request, "retention_h": int(retention_h), "max_mb": max_bytes // (1024 * 1024)}
+    def lang_of(request: Request) -> str:
+        return pick_lang(request.query_params.get("lang"), request.cookies.get("lang"),
+                         request.headers.get("accept-language"))
 
-    def form_context(request: Request, error: str | None = None, **values) -> dict:
+    def render(request: Request, name: str, ctx: dict, status_code: int = 200):
+        lang = lang_of(request)
+        t = strings(lang)
+        base = {
+            "request": request, "lang": lang, "t": t,
+            "tjs": {k: t[k] for k in JS_KEYS},
+            "langs": [{"code": c, "label": lbl, "url": f"{request.url.path}?lang={c}"}
+                      for c, lbl in LANGS.items()],
+            "retention_h": int(retention_h), "max_mb": max_bytes // (1024 * 1024),
+        }
+        resp = templates.TemplateResponse(request, name, base | ctx, status_code=status_code)
+        if request.query_params.get("lang") in LANGS:
+            resp.set_cookie("lang", lang, max_age=365 * 24 * 3600, samesite="lax")
+        return resp
+
+    def form_context(error: str | None = None, **values) -> dict:
         profiles = all_models()
-        return base_context(request) | {
+        return {
             "scanners": [scanner_view(s) for s in sorted(all_scanners())],
             "models": [model_view(profiles[m]) for m in models],
-            "custom": CUSTOM,
-            "profile_template": PROFILE_TEMPLATE,
-            "error": error,
-            "values": values,
+            "custom": CUSTOM, "profile_template": PROFILE_TEMPLATE,
+            "error": error, "values": values,
         }
 
     @app.get("/")
     def index(request: Request):
-        profiles = all_models()
-        return templates.TemplateResponse(request, "index.html", base_context(request) | {
+        return render(request, "index.html", {
             "scanner_labels": [scanner_view(s)["label"] for s in sorted(all_scanners())],
             "model_labels": [MODEL_LABELS.get(m, m) for m in models],
-            "profiles": profiles,
         })
 
     @app.get("/app")
     def form(request: Request):
-        return templates.TemplateResponse(request, "app.html", form_context(request))
+        return render(request, "app.html", form_context())
 
     @app.post("/jobs")
     async def submit(request: Request, report: UploadFile = File(...),
                      scanner: str = Form(...), model: str = Form(...),
                      api_key: str = Form(""), profile_json: str = Form("")):
+        t = strings(lang_of(request))
         api_key = api_key.strip() or None
         values = dict(scanner=scanner, model=model, profile_json=profile_json)
 
         def bad(msg: str):
-            return templates.TemplateResponse(
-                request, "app.html", form_context(request, error=msg, **values), status_code=400)
+            return render(request, "app.html", form_context(error=msg, **values), status_code=400)
 
+        if store.pending() >= max_queue:
+            return render(request, "app.html", form_context(error=t["e_busy"], **values),
+                          status_code=503)
         pdf = await report.read(max_bytes + 1)
         if len(pdf) > max_bytes:
-            return bad(f"The file is larger than {max_bytes // (1024 * 1024)} MB.")
+            return bad(t["e_too_big"].format(mb=max_bytes // (1024 * 1024)))
         if not pdf.startswith(b"%PDF"):
-            return bad("That file is not a PDF. Upload the scanner's PDF report export.")
+            return bad(t["e_not_pdf"])
         if scanner not in all_scanners():
-            return bad(f"Unknown scanner '{scanner}'.")
+            return bad(t["e_scanner"].format(s=scanner))
 
         cfg = None
         if model == CUSTOM:
@@ -147,17 +176,17 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
                 cfg = json.loads(profile_json)
                 if not isinstance(cfg, dict):
                     raise ValueError("the profile must be a JSON object")
-                profile = custom_profile(cfg, api_key)
+                profile = custom_profile(cfg, api_key, allow_private=allow_private)
             except (ValueError, TypeError) as exc:
-                return bad(f"Custom profile: {exc}")
+                return bad(t["e_custom"].format(e=exc))
         elif model in models:
             profile = all_models()[model]
             if not profile.is_local and not api_key:
-                return bad(f"{MODEL_LABELS.get(model, model)} is a cloud model: paste your API key.")
+                return bad(t["e_need_key"].format(m=MODEL_LABELS.get(model, model)))
             if profile.is_local:
                 api_key = None
         else:
-            return bad(f"Unknown model '{model}'.")
+            return bad(t["e_model"].format(m=model))
 
         job = store.create(pdf, scanner, model, profile, api_key, profile_json=cfg)
         worker.submit(job)
@@ -186,9 +215,7 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
     @app.get("/jobs/{job_id}")
     def job_page(request: Request, job_id: str):
         job = job_or_404(job_id)
-        return templates.TemplateResponse(request, "job.html", base_context(request) | {
-            "job": status_payload(job), "downloads": DOWNLOADS,
-        })
+        return render(request, "job.html", {"job": status_payload(job), "downloads": DOWNLOADS})
 
     @app.get("/api/jobs/{job_id}")
     def job_status(job_id: str):
