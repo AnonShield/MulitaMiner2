@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% block title %}MulitaMiner · job {{ job.id[:8] }}{% endblock %}
+{% block nav %}
+<a href="/">← Home</a>
+<a class="cta" href="/app">New extraction</a>
+{% endblock %}
 {% block content %}
+<div class="jobwrap">
 <section class="card job" id="job" data-id="{{ job.id }}" data-status="{{ job.status }}">
   <div class="jobhead">
     <div>
-      <div class="kick">Job {{ job.id[:8] }} · {{ job.scanner }} · {{ job.model }}</div>
+      <div class="kick">Job {{ job.id[:8] }} · {{ job.scanner }} · {{ job.model_label }}</div>
       <h1 class="status" id="status-h">
         <span class="dot {{ job.status }}" id="dot"></span><span id="status-t">{{ job.status }}</span>
       </h1>
@@ -28,32 +33,52 @@
 
   <div id="done" {% if job.status != 'done' %}hidden{% endif %}>
     <div class="tiles">
-      <div class="tile"><div class="v" id="t-records">{{ job.records if job.records is not none else '' }}</div><div class="l">records</div></div>
-      <div class="tile"><div class="v" id="t-blocks">{{ job.total_blocks }}</div><div class="l">findings read</div></div>
-      <div class="tile"><div class="v" id="t-dur">{{ '%d:%02d' % (job.duration_s // 60, job.duration_s % 60) if job.duration_s else '' }}</div><div class="l">min:sec</div></div>
-      <div class="tile"><div class="v" id="t-cost">{{ '$%.4f' % job.cost_usd if job.cost_usd else '0' }}</div><div class="l">est. cost</div></div>
+      <div class="tile"><div class="v">{{ job.records if job.records is not none else '' }}</div><div class="l">records</div></div>
+      <div class="tile"><div class="v">{{ job.total_blocks }}</div><div class="l">findings read</div></div>
+      <div class="tile"><div class="v">{{ '%d:%02d' % (job.duration_s // 60, job.duration_s % 60) if job.duration_s else '' }}</div><div class="l">min:sec</div></div>
+      <div class="tile"><div class="v">{{ '$%.4f' % job.cost_usd if job.cost_usd else '0' }}</div><div class="l">est. cost</div></div>
     </div>
     <div class="actions">
-      {% for fmt in exports %}
-      <a class="primary" href="/jobs/{{ job.id }}/download/{{ fmt }}">Download {{ fmt | upper }}</a>
-      {% endfor %}
-      <a class="ghost" href="/">Extract another</a>
+      <a class="btn btn-primary" href="/jobs/{{ job.id }}/download/xlsx">Download XLSX</a>
+      <a class="btn btn-primary" href="/jobs/{{ job.id }}/download/csv">Download CSV</a>
+      <a class="btn btn-ghost" href="/app">Extract another</a>
     </div>
+    <p class="lb" style="margin-top:1.3rem">Also available · for tools</p>
+    <div class="chips">
+      {% for slug, (file, label) in downloads.items() if slug not in ('xlsx', 'csv') %}
+      <a class="chip" href="/jobs/{{ job.id }}/download/{{ slug }}" style="text-decoration:none">{{ label }} ↓</a>
+      {% endfor %}
+    </div>
+    <p class="hint">SARIF for GitHub code scanning and SonarQube, CSAF 2.0 for CSIRT advisories, DefectDojo Generic Findings for import, CAIS for the institutional schema. Same records, different serialisation.</p>
   </div>
 
   <div id="failed" {% if job.status != 'failed' %}hidden{% endif %}>
     <pre class="err" id="err">{{ job.error or '' }}</pre>
-    <div class="actions"><a class="primary" href="/">Try again</a></div>
+    <div class="actions"><a class="btn btn-primary" href="/app">Try again</a></div>
   </div>
 </section>
+
+<section class="card jobsteps">
+  <h3>What the job does</h3>
+  <ol id="steps">
+    <li data-s="reading"><b>Read</b> the PDF text.</li>
+    <li data-s="segmenting"><b>Segment</b> it into one block per finding with the {{ job.scanner }} profile. This fixes the finding count.</li>
+    <li data-s="extracting"><b>Extract</b>: each block goes to the model, which returns one JSON record per block id. Missing ones are retried in smaller groups.</li>
+    <li data-s="consolidating"><b>Consolidate</b> duplicates and normalise severity and CVSS.</li>
+    <li data-s="exporting"><b>Export</b> XLSX and CSV, one row per finding.</li>
+  </ol>
+</section>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 (function () {
   const root = document.getElementById('job');
-  if (root.dataset.status === 'done' || root.dataset.status === 'failed') return;
   const $ = id => document.getElementById(id);
+  const mark = stage => document.querySelectorAll('#steps li').forEach(li => li.classList.toggle('cur', li.dataset.s === stage));
+  mark(root.dataset.status === 'running' ? '{{ job.stage }}' : '');
+  if (root.dataset.status === 'done' || root.dataset.status === 'failed') return;
   const tick = async () => {
     let j;
     try { j = await (await fetch('/api/jobs/' + root.dataset.id, {cache: 'no-store'})).json(); }
@@ -64,6 +89,7 @@
     $('detail').textContent = j.status === 'queued'
       ? (j.queue_position ? 'Position ' + (j.queue_position + 1) + ' in the queue. One report runs at a time.' : 'Next in line.')
       : (j.stage || 'starting');
+    mark(j.status === 'running' ? j.stage : '');
     const bar = $('bar');
     if (j.total_blocks) {
       bar.removeAttribute('data-indeterminate');

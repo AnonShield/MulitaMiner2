@@ -16,13 +16,14 @@ KEY = "sk-super-secret-key-123"
 
 
 def fake_run(config, client=None, run_dir=None, doc=None, progress=None):
-    """Stand-in for pipeline.run: emits progress and writes the exports."""
+    """Stand-in for pipeline.run: emits progress and writes every download."""
+    assert config.formats == jobs.EXPORTS
     progress.stage("reading")
     progress.segmented(3)
     progress.chunk_done(3, 3)
     run_dir.mkdir(parents=True, exist_ok=True)
-    for fmt in jobs.EXPORTS:
-        (run_dir / f"results.{fmt}").write_bytes(b"x")
+    for filename, _ in jobs.DOWNLOADS.values():
+        (run_dir / filename).write_bytes(b"x")
     return RunResult(records=[], duration_s=1.5, block_count=3), run_dir
 
 
@@ -58,8 +59,16 @@ def test_submit_poll_download(client, tmp_path):
     assert status["status"] == "done"
     assert status["done_blocks"] == 3 and status["total_blocks"] == 3
     assert client.get(f"/jobs/{job_id}").status_code == 200
-    assert client.get(f"/jobs/{job_id}/download/xlsx").content == b"x"
+    for slug in jobs.DOWNLOADS:
+        r = client.get(f"/jobs/{job_id}/download/{slug}")
+        assert r.content == b"x", slug
+        assert "mulitaminer-openvas-" in r.headers["content-disposition"]
     assert client.get(f"/jobs/{job_id}/download/pdf").status_code == 404
+
+
+def test_pages_render(client):
+    assert "Research" in client.get("/").text
+    assert "Profile JSON" in client.get("/app").text
 
 
 def test_key_never_touches_disk_or_logs(client, tmp_path, caplog):

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}MulitaMiner · extract a report{% endblock %}
+{% block nav %}
+<a href="/">← Home</a>
+<a href="/#how">How it works</a>
+{% endblock %}
+{% block content %}
+<div class="wrap app">
+  <div>
+    <div class="kick">Extract</div>
+    <h1>Extract a scanner report</h1>
+    <p class="sub">Three choices: the PDF, the scanner that produced it, and the model that reads it.
+    The guide on the side explains each one.</p>
+    {% if error %}<div class="alert" role="alert" style="margin-top:1rem">{{ error }}</div>{% endif %}
+
+    <form class="card form" method="post" action="/jobs" enctype="multipart/form-data" id="form" style="margin-top:1.2rem">
+      <div class="fs">
+        <div class="ft"><span class="n">1</span><h3>Report</h3></div>
+        <div class="drop" id="drop">
+          <input type="file" id="report" name="report" accept="application/pdf,.pdf" required>
+          <div class="drop-idle">
+            <strong>Drop the PDF here</strong> or <span class="link">browse</span>
+            <small>The scanner's PDF export · up to {{ max_mb }} MB</small>
+          </div>
+          <div class="drop-file" hidden><span class="fname"></span><span class="fsize"></span></div>
+        </div>
+        <p class="hint">PDF only. Other exports of the same scan (XML, CSV, HTML, JSON) are not accepted: the profiles read the PDF layout.</p>
+        <p class="alert" id="file-err" hidden style="margin:.6rem 0 0"></p>
+      </div>
+
+      <div class="fs">
+        <div class="ft"><span class="n">2</span><h3>Scanner</h3></div>
+        <select id="scanner" name="scanner" required>
+          <option value="" disabled {% if not values.scanner %}selected{% endif %}>Which tool produced this PDF?</option>
+          {% for s in scanners %}
+          <option value="{{ s.key }}" {% if values.scanner == s.key %}selected{% endif %}>{{ s.label }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint">The scanner profile tells MulitaMiner where one finding ends and the next begins. There is no auto-detection: pick the right one or you get zero findings.</p>
+      </div>
+
+      <div class="fs">
+        <div class="ft"><span class="n">3</span><h3>Model</h3></div>
+        <select id="model" name="model" required>
+          {% for m in models %}
+          <option value="{{ m.key }}" data-local="{{ 'yes' if m.is_local else 'no' }}" data-id="{{ m.model }}" data-provider="{{ m.provider }}" data-keyurl="{{ m.key_url }}"
+            {% if values.model == m.key %}selected{% endif %}>{{ m.label }}{% if m.is_local %} · local, no key{% endif %}</option>
+          {% endfor %}
+          <option value="{{ custom }}" data-local="maybe" {% if values.model == custom %}selected{% endif %}>Custom OpenAI-compatible endpoint…</option>
+        </select>
+        <p class="modelid" id="modelid"></p>
+
+        <div id="custom-box" hidden>
+          <label class="lb" for="profile_json">Profile JSON <small>· same fields as <code>configs/llms/*.json</code>, see the guide</small></label>
+          <textarea id="profile_json" name="profile_json" rows="9" spellcheck="false">{{ values.profile_json or profile_template }}</textarea>
+          <p class="hint">Used for this job only, never saved on the server. Leave the key below empty for a keyless server.</p>
+        </div>
+
+        <label class="lb" for="api_key">API key <small id="key-note"></small></label>
+        <div class="keyrow">
+          <input type="password" id="api_key" name="api_key" autocomplete="off" placeholder="sk-…">
+          <button type="button" class="btn btn-ghost" id="toggle-key">show</button>
+        </div>
+        <p class="hint" id="key-hint">Sent once over HTTPS, held in memory for this job only, never stored or logged. Use a key with a spending limit.</p>
+      </div>
+
+      <div class="submit">
+        <button type="submit" class="btn btn-primary btn-lg" id="submit">Extract findings</button>
+        <p class="hint">You get a link to the job. Close the tab if you like; the result waits {{ retention_h }} h.</p>
+      </div>
+    </form>
+  </div>
+
+  <aside class="card guide" aria-label="Guide">
+    <div class="gh"><h2>Guide</h2><span class="kick">what each field means</span></div>
+
+    <details open>
+      <summary>1 · Which file do I upload?</summary>
+      <div class="gb">
+        <p>The <b>PDF export</b> of a scan, as the scanner's own "export report" or "download PDF" button produces it. Not the XML, CSV or HTML export: MulitaMiner's profiles are written against the PDF layouts.</p>
+        <p>One report per job. Up to {{ max_mb }} MB; the largest sample in the project (a Qualys scan with 1,053 findings) is 5 MB.</p>
+        <p>The PDF and the results are deleted {{ retention_h }} h after the job finishes. If the report is sensitive, run it through <a href="https://anonshield.org" target="_blank" rel="noopener">AnonShield</a> first and upload the pseudonymized copy.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>2 · What is a scanner profile?</summary>
+      <div class="gb">
+        <p>A small JSON file describing one vendor's PDF layout: the pattern that opens a finding, where the host and port appear, which labels mark the description, solution and references, plus the prompt that explains the layout to the model.</p>
+        <table>
+          <tr><th>Choose</th><th>When the PDF comes from</th></tr>
+          {% for s in scanners %}<tr><td>{{ s.key }}</td><td>{{ s.desc }}</td></tr>{% endfor %}
+        </table>
+        <p>Wrong profile: the segmenter finds no blocks and the job fails with "No finding blocks found", nothing is sent to the model.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>3 · Which model, and where do I get a key?</summary>
+      <div class="gb">
+        <p>Every model speaks the same OpenAI-style API. The model reads each finding and fills the record; the rest of the pipeline is the same whichever you choose.</p>
+        <table>
+          <tr><th>Model</th><th>Provider</th><th>Key</th></tr>
+          {% for m in models %}
+          <tr><td>{{ m.label }}</td><td>{{ m.provider }}</td><td>{% if m.is_local %}none, local{% elif m.key_url %}<a href="{{ m.key_url }}" target="_blank" rel="noopener">get one ↗</a>{% else %}required{% endif %}</td></tr>
+          {% endfor %}
+        </table>
+        <p><b>Cost.</b> You pay the provider directly. A 34-finding OpenVAS report cost about US$0.02 on DeepSeek; a 1,053-finding Qualys scan, about US$0.50. The job page shows the estimate.</p>
+        <p><b>Time.</b> Small reports finish in under a minute; a 150-finding Tenable report takes around 40 minutes, the 1,053-finding Qualys one about two hours. Jobs run one at a time and you keep the link.</p>
+        <p><b>Your key</b> is sent with the form, kept in memory while the job runs and dropped when it finishes. It is never written to disk or to a log, and provider error messages that contain it are replaced. The server operator could still read it in flight, so use a key with a spending limit and rotate it if in doubt.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>4 · Custom endpoint: the profile fields</summary>
+      <div class="gb">
+        <p>Pick "Custom OpenAI-compatible endpoint" to use any provider or server not in the list: Mistral, Together, OpenRouter, a vLLM or llama.cpp server you expose, and so on. The JSON has the same fields the CLI reads from <code>configs/llms/*.json</code>:</p>
+        <table>
+          <tr><th>Field</th><th>Meaning</th></tr>
+          <tr><td>key</td><td>A short name for this profile. Shown on the job page; any string.</td></tr>
+          <tr><td>model</td><td>The provider's model id, exactly as its API expects it (<code>mistral-large-latest</code>, <code>qwen2.5:7b</code>…).</td></tr>
+          <tr><td>base_url</td><td>The API root, usually ending in <code>/v1</code>. The tool calls <code>base_url + /chat/completions</code>.</td></tr>
+          <tr><td>context_window</td><td>Tokens the model can take in one request (prompt + answer). Sets how many findings go in one chunk. For Ollama it is also sent as <code>num_ctx</code>.</td></tr>
+          <tr><td>max_output_tokens</td><td>Longest answer the model may return. Findings are packed so the expected answer fits; too small means more, smaller chunks.</td></tr>
+          <tr><td>supports_json_schema</td><td><code>true</code> if the endpoint accepts a JSON schema as <code>response_format</code> (OpenAI, Ollama, vLLM). <code>false</code> falls back to "JSON object" mode plus the schema in the prompt.</td></tr>
+          <tr><td>reasoning_tags</td><td><code>true</code> for models that wrap thinking in <code>&lt;think&gt;</code> tags (Qwen3, DeepSeek-R1); the tags are stripped before parsing.</td></tr>
+          <tr><td>reasoning_effort</td><td><code>"low"</code>, <code>"medium"</code>, <code>"high"</code> or <code>"none"</code> for thinking models; omit otherwise.</td></tr>
+          <tr><td>temperature</td><td>Defaults to 0: extraction should be deterministic.</td></tr>
+          <tr><td>request_timeout_s</td><td>Seconds to wait for one answer, default 120. Raise it for slow servers (CPU inference).</td></tr>
+          <tr><td>price_in, price_out</td><td>US$ per million input and output tokens, only for the cost estimate. Default 0.</td></tr>
+          <tr><td>encoding</td><td>Tokenizer used to budget chunks, default <code>cl100k_base</code>. Leave it.</td></tr>
+        </table>
+        <p>Not accepted here: <code>api_key_env</code>. On the CLI it names the environment variable that holds the key; on the web the key field does that job. Fill it for a keyed provider, leave it empty for a keyless local server.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>5 · What happens after I click Extract?</summary>
+      <div class="gb">
+        <ul>
+          <li><b>Read</b> and <b>segment</b>: the PDF becomes numbered blocks, one per finding. Seconds.</li>
+          <li><b>Extract</b>: blocks go to the model in chunks; the page counts findings as they come back. Missing ones are retried in smaller groups.</li>
+          <li><b>Consolidate</b>: duplicates merge, severity and CVSS are normalised.</li>
+          <li><b>Download</b>: XLSX or CSV, one row per finding, the same columns for every scanner.</li>
+        </ul>
+        <p>If something fails (wrong profile, rejected key, provider outage), the job page shows the reason and your upload stays {{ retention_h }} h so you can resubmit with a fix.</p>
+      </div>
+    </details>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const input = document.getElementById('report');
+  const drop = document.getElementById('drop');
+  const idle = drop.querySelector('.drop-idle');
+  const picked = drop.querySelector('.drop-file');
+  const ferr = document.getElementById('file-err');
+  const maxBytes = {{ max_mb }} * 1048576;
+  const show = () => {
+    let f = input.files[0];
+    ferr.hidden = true;
+    if (f && !/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') {
+      ferr.textContent = f.name + ' is not a PDF. Upload the scanner\'s PDF report.'; ferr.hidden = false;
+      input.value = ''; f = null;
+    } else if (f && f.size > maxBytes) {
+      ferr.textContent = f.name + ' is ' + (f.size / 1048576).toFixed(1) + ' MB; the limit is {{ max_mb }} MB.'; ferr.hidden = false;
+      input.value = ''; f = null;
+    }
+    picked.hidden = !f; idle.hidden = !!f;
+    if (f) {
+      picked.querySelector('.fname').textContent = f.name;
+      picked.querySelector('.fsize').textContent = (f.size / 1048576).toFixed(1) + ' MB';
+    }
+  };
+  input.addEventListener('change', show);
+  ['dragenter', 'dragover'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) { input.files = ev.dataTransfer.files; show(); } });
+
+  const model = document.getElementById('model');
+  const key = document.getElementById('api_key');
+  const note = document.getElementById('key-note');
+  const hint = document.getElementById('key-hint');
+  const mid = document.getElementById('modelid');
+  const custom = document.getElementById('custom-box');
+  const baseHint = hint.textContent;
+  const syncModel = () => {
+    const o = model.selectedOptions[0], local = o.dataset.local;
+    custom.hidden = local !== 'maybe';
+    key.disabled = local === 'yes';
+    key.required = local === 'no';
+    mid.innerHTML = local === 'maybe' ? 'model id and endpoint come from the JSON below'
+      : 'model id <b>' + o.dataset.id + '</b> · ' + o.dataset.provider + (local === 'yes' ? ' · served locally' : '');
+    note.textContent = local === 'yes' ? '· not needed for a local model'
+                     : local === 'maybe' ? '· leave empty for a keyless server' : '· required';
+    hint.innerHTML = baseHint + (local === 'no' && o.dataset.keyurl
+      ? ' <a href="' + o.dataset.keyurl + '" target="_blank" rel="noopener">Get a ' + o.dataset.provider + ' key ↗</a>' : '');
+  };
+  model.addEventListener('change', syncModel); syncModel();
+
+  document.getElementById('toggle-key').addEventListener('click', function () {
+    const hidden = key.type === 'password';
+    key.type = hidden ? 'text' : 'password'; this.textContent = hidden ? 'hide' : 'show';
+  });
+  document.getElementById('form').addEventListener('submit', () => {
+    const b = document.getElementById('submit'); b.disabled = true; b.textContent = 'Uploading…';
+  });
+})();
+</script>
+{% endblock %}

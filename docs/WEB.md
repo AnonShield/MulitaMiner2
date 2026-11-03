@@ -1,8 +1,13 @@
 # Web interface
 
 A browser front end for `mulitaminer extract`: upload a scanner PDF, pick the
-scanner and the model, download the spreadsheet. Jobs run in the background
-one at a time; the job page is a link you can close and come back to.
+scanner and the model, download the results. Jobs run in the background one
+at a time; the job page is a link you can close and come back to.
+
+Pages: `/` (what the tool is, how it works, the papers), `/app` (the form,
+with a guide explaining every field, including the custom-profile JSON) and
+`/jobs/<id>` (status, then downloads). Every exporter runs at the end of a
+job, so the job page offers XLSX, CSV, JSON, SARIF, CSAF, DefectDojo and CAIS.
 
 Design and rationale: [specs/2026-11-03-web-interface-design.md](specs/2026-11-03-web-interface-design.md).
 

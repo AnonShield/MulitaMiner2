@@ -26,7 +26,20 @@ from mulitaminer.ui import Progress
 
 log = logging.getLogger(__name__)
 
-EXPORTS = ("xlsx", "csv")
+# Every exporter runs at the end of a job (cheap: they serialise the records
+# already in memory). DOWNLOADS maps a URL slug to the file each one leaves in
+# the run dir and the label the page shows; results.json is always written.
+EXPORTS = ("xlsx", "csv", "sarif", "csaf", "generic", "cais")
+DOWNLOADS = {
+    "xlsx": ("results.xlsx", "XLSX"),
+    "csv": ("results.csv", "CSV"),
+    "json": ("results.json", "JSON"),
+    "sarif": ("results.sarif", "SARIF 2.1.0"),
+    "csaf": ("results.csaf.json", "CSAF 2.0"),
+    "defectdojo": ("results.generic.json", "DefectDojo"),
+    "cais": ("results.cais.csv", "CAIS CSV"),
+    "cais-json": ("results.cais.json", "CAIS JSON"),
+}
 # Marks a web-form profile as keyed; the dataclass means "keyless" by None.
 FORM_KEY_ENV = "WEB_FORM"
 
