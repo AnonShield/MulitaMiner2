@@ -127,7 +127,7 @@ a.chip:hover .ic{color:var(--accent-h)}
 .demo .pane{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;min-width:0}
 .demo .pane .ph{display:flex;justify-content:space-between;align-items:center;padding:.6rem .9rem;border-bottom:1px solid var(--border);font:600 .7rem var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .demo .pane .ph span{color:var(--text2);letter-spacing:0;text-transform:none;font-weight:400}
-.demo pre{margin:0;padding:.9rem 1rem;font:.74rem/1.55 var(--mono);color:var(--text2);white-space:pre-wrap}
+.demo pre{margin:0;padding:.9rem 1rem;font:.78rem/1.6 var(--mono);color:var(--text2);white-space:pre-wrap}
 .demo pre .k{color:var(--amber)}.demo pre .s{color:#d7c6a8}.demo pre .n{color:#8fd3a8}.demo pre .h{color:var(--text)}
 :root[data-theme=light] .demo pre .s{color:#6b4a1c}
 :root[data-theme=light] .demo pre .n{color:#1e6b3a}
@@ -170,6 +170,7 @@ a.chip:hover .ic{color:var(--accent-h)}
 .stage svg .kk,.fig svg .kk{fill:var(--amber)}
 .stage svg .tx,.fig svg .tx{font:600 8px var(--mono);fill:var(--amber)}
 .stage svg .tx2,.fig svg .tx2{font:600 7px var(--mono);fill:var(--accent-h)}
+.stage svg .tv,.fig svg .tv{font:500 8px var(--mono);fill:var(--text2)}
 .stage svg .br,.fig svg .br{font:600 14px var(--mono);fill:var(--accent)}
 .stage .n{font:600 .7rem var(--mono);color:var(--accent)}
 .stage h3{font-size:1rem;margin:.3rem 0 .15rem}
@@ -223,7 +224,9 @@ a.chip:hover .ic{color:var(--accent-h)}
 .sister{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.6rem}
 @media (max-width:860px){.sister{grid-template-columns:1fr}}
 .sister h3{font-size:1rem;margin-bottom:.4rem}
+.sister .card{display:flex;flex-direction:column}
 .sister p{color:var(--text2);font-size:.9rem;margin:0 0 .9rem}
+.sister .card .btn{margin-top:auto;align-self:flex-start}
 .closing{margin:80px 0 0;background:linear-gradient(180deg,var(--raised),var(--bg));border:1px solid var(--border);border-radius:var(--r-lg);padding:2.6rem 2rem;text-align:center}
 .closing p{color:var(--text2);max-width:52ch;margin:.6rem auto 1.4rem}
 .closing pre{display:inline-block;text-align:left;margin:1.3rem 0 0;padding:.8rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);font:.78rem/1.6 var(--mono);color:var(--text2);max-width:100%;overflow:auto}

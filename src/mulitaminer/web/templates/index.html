@@ -53,6 +53,10 @@
     scanner to get an update."</span>,
   <span class="k">"detection_result"</span>: <span class="s">"Vulnerability was detected
     according to the Vulnerability Detection Method."</span>,
+  <span class="k">"detection_method"</span>: [
+    <span class="s">"Details: SMTP too long line"</span>,
+    <span class="s">"OID: 1.3.6.1.4.1.25623.1.0.11270"</span>
+  ],
   <span class="k">"source"</span>: <span class="s">"OPENVAS"</span>
 }</pre>
       </div>
@@ -66,7 +70,6 @@
       <div class="stat"><div class="v"><em>1.5B</em></div><div class="l">{{ t.stat_local_l }}</div></div>
       <div class="stat"><div class="v"><em>6</em> {{ t.stat_exports }}</div><div class="l">{{ t.stat_exports_l }}</div></div>
     </div>
-    <p class="src">{{ t.stat_src }}</p>
   </div>
 </section>
 
@@ -95,15 +98,15 @@
         <div class="n">02</div><h3>{{ t.s2 }}</h3><p>{{ t.s2_t }}</p><i class="prog"></i></button>
       <button class="stage" role="tab" aria-selected="false" data-i="2">
         <svg viewBox="0 0 160 80">
-          <rect x="6" y="26" width="40" height="28" rx="3" class="blk on"/><text x="12" y="38" class="tx">#0</text><path d="M12 46h26" class="ln"/>
-          <path d="M50 40h10" class="ar"/>
-          <circle cx="76" cy="40" r="15" class="node"/><text x="76" y="43" text-anchor="middle" class="tx2">LLM</text>
-          <path d="M94 40h8" class="ar"/><path d="M98 35l6 5-6 5" class="ar"/>
-          <rect x="108" y="14" width="46" height="52" rx="3" class="blk"/>
-          <text x="113" y="27" class="br">{</text><text x="140" y="62" class="br">}</text>
-          <rect x="118" y="30" width="12" height="4" rx="1" class="kk"/><path d="M134 32h14" class="ln"/>
-          <rect x="118" y="40" width="16" height="4" rx="1" class="kk"/><path d="M138 42h10" class="ln"/>
-          <rect x="118" y="50" width="10" height="4" rx="1" class="kk"/><path d="M132 52h14" class="ln"/>
+          <rect x="4" y="22" width="38" height="36" rx="3" class="blk"/><text x="8" y="32" class="tx">#0</text>
+          <path d="M8 40h28M8 47h20M8 54h26" class="ln"/>
+          <path d="M45 40h9" class="ar"/><path d="M50 35l5 5-5 5" class="ar"/>
+          <circle cx="70" cy="40" r="13" class="node"/><text x="70" y="43" text-anchor="middle" class="tx2">LLM</text>
+          <path d="M86 40h9" class="ar"/><path d="M91 35l5 5-5 5" class="ar"/>
+          <rect x="100" y="12" width="56" height="56" rx="3" class="blk on"/>
+          <text x="105" y="26" class="tx">cvss</text><text x="151" y="26" text-anchor="end" class="tv">7.5</text>
+          <text x="105" y="40" class="tx">port</text><text x="151" y="40" text-anchor="end" class="tv">25</text>
+          <text x="105" y="54" class="tx">sev</text><text x="151" y="54" text-anchor="end" class="tv">HIGH</text>
         </svg>
         <div class="n">03</div><h3>{{ t.s3 }}</h3><p>{{ t.s3_t }}</p><i class="prog"></i></button>
       <button class="stage" role="tab" aria-selected="false" data-i="3">
