@@ -71,6 +71,13 @@
     </form>
   </div>
 
+  <div class="side">
+  <section class="card recent" id="recent" hidden>
+    <div class="gh"><h2>{{ t.recent }}</h2></div>
+    <p class="hint" style="padding:0 1.3rem">{{ t.recent_sub }}</p>
+    <ul id="recent-list"></ul>
+  </section>
+
   <aside class="card guide" aria-label="{{ t.guide }}">
     <div class="gh"><h2>{{ t.guide }}</h2><span class="kick">{{ t.guide_sub }}</span></div>
     <details open>
@@ -118,6 +125,7 @@
         <p>{{ t.g5_b.format(h=retention_h) }}</p></div>
     </details>
   </aside>
+  </div>
 </div>
 {% endblock %}
 
@@ -179,6 +187,33 @@
   });
   document.getElementById('form').addEventListener('submit', () => {
     const b = document.getElementById('submit'); b.disabled = true; b.textContent = T.f_uploading;
+  });
+
+  // Extractions this browser has opened, newest first; gone ones are dropped.
+  const KEY = 'mulita.jobs';
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+  const save = list => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} };
+  const box = document.getElementById('recent'), ul = document.getElementById('recent-list');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const render = list => {
+    box.hidden = list.length === 0;
+    ul.innerHTML = list.map(j => `<li data-token="${esc(j.token)}">
+      <a href="/jobs/${esc(j.token)}"><b>${esc(j.name)}</b><span>${esc(j.scanner)} · ${esc(j.model)} · ${esc((j.created || '').slice(0, 16).replace('T', ' '))}</span></a>
+      <i class="dot ${esc(j.status || '')}" title="${esc(T['st_' + j.status] || '')}"></i>
+      <button type="button" class="forget" title="${esc(T.recent_forget)}">×</button></li>`).join('');
+  };
+  let list = load(); render(list);
+  ul.addEventListener('click', ev => {
+    const b = ev.target.closest('.forget'); if (!b) return;
+    const tok = b.closest('li').dataset.token; list = list.filter(j => j.token !== tok); save(list); render(list);
+  });
+  list.forEach(async j => {
+    try {
+      const r = await fetch('/api/jobs/' + j.token, {cache: 'no-store'});
+      if (r.status === 404) { list = list.filter(x => x.token !== j.token); save(list); render(list); return; }
+      const s = await r.json(); j.status = s.status; const li = ul.querySelector(`li[data-token="${j.token}"] .dot`);
+      if (li) { li.className = 'dot ' + s.status; li.title = T['st_' + s.status] || s.status; }
+    } catch (e) {}
   });
 })();
 </script>

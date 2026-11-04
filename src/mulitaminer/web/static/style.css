@@ -15,6 +15,7 @@
   --text:#1a1a17;--text2:#4d4b47;--muted:#7f7b71;
   --accent:#d9541e;--accent-h:#b8431a;--accent-soft:rgba(217,84,30,.12);--amber:#a85d0e;--glow:.10}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{scroll-behavior:smooth;background:var(--bg)}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
 a{color:var(--accent-h)}
@@ -241,7 +242,20 @@ input:read-only{color:var(--muted);background:var(--raised);cursor:not-allowed}
 .submit .hint{margin:0}
 .alert{background:rgba(239,83,80,.12);border:1px solid rgba(239,83,80,.4);color:#ffb4b2;border-radius:var(--r-md);padding:.8rem 1rem;margin-bottom:1rem;font-size:.9rem}
 
-.guide{position:sticky;top:80px;padding:0;overflow:hidden}
+.side{position:sticky;top:80px;display:flex;flex-direction:column;gap:1rem}
+.recent{padding:0 0 .6rem;overflow:hidden}
+.recent .gh{padding:1rem 1.3rem .6rem;display:flex;align-items:center;justify-content:space-between}
+.recent .gh h2{font-size:1rem}
+.recent ul{list-style:none;margin:.4rem 0 0;padding:0;max-height:260px;overflow:auto}
+.recent li{display:flex;align-items:center;gap:.6rem;padding:.55rem 1.3rem;border-top:1px solid var(--border)}
+.recent li a{flex:1;min-width:0;text-decoration:none;color:var(--text)}
+.recent li a b{display:block;font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent li a span{display:block;font:.68rem var(--mono);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent li:hover a b{color:var(--accent-h)}
+.recent .dot{flex:none;width:.6rem;height:.6rem}
+.recent .forget{background:none;border:0;color:var(--muted);font:1rem var(--mono);cursor:pointer;padding:0 .2rem}
+.recent .forget:hover{color:var(--bad)}
+.guide{padding:0;overflow:hidden}
 .guide .gh{padding:1rem 1.3rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .guide .gh h2{font-size:1rem}
 .guide details{border-bottom:1px solid var(--border)}

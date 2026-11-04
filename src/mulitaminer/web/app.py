@@ -70,7 +70,7 @@ JS_KEYS = ("err_not_pdf", "err_too_big", "f_custom_id", "f_modelid", "f_served_l
            "f_key_local", "f_key_custom", "f_key_req", "f_key_hint", "f_get_key", "show",
            "hide", "f_uploading", "st_queued", "st_running", "st_done", "st_failed", "q_pos",
            "q_next", "starting", "findings", "stage_reading", "stage_segmenting",
-           "stage_extracting")
+           "stage_extracting", "recent_forget", "recent_open", "recent_none")
 
 
 def _env_models() -> list[str]:
@@ -225,12 +225,13 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
                                      f"{int(retention_h)} hours).")
         return job
 
-    def status_payload(job) -> dict:
+    def status_payload(job, token: str) -> dict:
         label = MODEL_LABELS.get(job.model, job.model)
         if job.model == CUSTOM and job.profile_json:
             label = f"custom · {job.profile_json.get('key', '')}"
         return {
             "id": job.id, "status": job.status, "stage": job.stage,
+            "name": store.read_name(job, fernet(token)), "created_at": job.created_at,
             "queue_position": store.queue_position(job) if job.status == "queued" else None,
             "total_blocks": job.total_blocks, "done_blocks": job.done_blocks,
             "records": job.records, "duration_s": job.duration_s, "cost_usd": job.cost_usd,
@@ -242,12 +243,12 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
     @app.get("/jobs/{token}")
     def job_page(request: Request, token: str):
         job = job_or_404(token)
-        return render(request, "job.html", {"job": status_payload(job), "token": token,
+        return render(request, "job.html", {"job": status_payload(job, token), "token": token,
                                             "downloads": DOWNLOADS})
 
     @app.get("/api/jobs/{token}")
     def job_status(token: str):
-        return JSONResponse(status_payload(job_or_404(token)))
+        return JSONResponse(status_payload(job_or_404(token), token))
 
     @app.get("/jobs/{token}/download/{fmt}")
     def download(token: str, fmt: str):

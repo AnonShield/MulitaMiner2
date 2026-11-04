@@ -29,10 +29,6 @@
     <p class="hint">{{ t.j_safe.format(h=retention_h) }}</p>
   </div>
 
-  <p class="lb" id="term-lb" style="margin-top:1.2rem" {% if not job.log %}hidden{% endif %}>{{ t.j_log }}</p>
-  <pre class="term" id="term">{% for line in job.log %}{{ line }}
-{% endfor %}</pre>
-
   <div id="done" {% if job.status != 'done' %}hidden{% endif %}>
     <div class="tiles">
       <div class="tile"><div class="v">{{ job.records if job.records is not none else '' }}</div><div class="l">{{ t.t_records }}</div></div>
@@ -59,6 +55,10 @@
     <pre class="err" id="err">{{ job.error or '' }}</pre>
     <div class="actions"><a class="btn btn-primary" href="/app">{{ t.j_retry }}</a></div>
   </div>
+
+  <p class="lb" id="term-lb" style="margin-top:1.3rem" {% if not job.log %}hidden{% endif %}>{{ t.j_log }}</p>
+  <pre class="term" id="term">{% for line in job.log %}{{ line }}
+{% endfor %}</pre>
 </section>
 
 <section class="card jobsteps">
@@ -80,6 +80,14 @@
   const T = {{ tjs | tojson }};
   const root = document.getElementById('job');
   const $ = id => document.getElementById(id);
+  // Remember this job in the browser so /app can list it (the link is the only key).
+  try {
+    const key = 'mulita.jobs', list = JSON.parse(localStorage.getItem(key) || '[]')
+      .filter(j => j.token !== root.dataset.id);
+    list.unshift({token: root.dataset.id, name: {{ job.name | tojson }}, scanner: {{ job.scanner | tojson }},
+                  model: {{ job.model_label | tojson }}, created: {{ job.created_at | tojson }}});
+    localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
+  } catch (e) {}
   const mark = stage => document.querySelectorAll('#steps li').forEach(li => li.classList.toggle('cur', li.dataset.s === stage));
   mark(root.dataset.status === 'running' ? '{{ job.stage }}' : '');
   if (root.dataset.status === 'done' || root.dataset.status === 'failed') return;
