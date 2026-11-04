@@ -7,6 +7,7 @@ import json
 import os
 import zipfile
 from contextlib import asynccontextmanager
+from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -86,7 +87,8 @@ JS_KEYS = ("err_not_pdf", "err_too_big", "f_custom_id", "f_modelid", "f_served_l
            "f_key_local", "f_key_custom", "f_key_req", "f_key_hint", "f_get_key", "show",
            "hide", "f_uploading", "st_queued", "st_running", "st_done", "st_failed", "q_pos",
            "q_next", "starting", "findings", "stage_reading", "stage_segmenting",
-           "stage_extracting", "recent_forget", "recent_open", "recent_none", "f_drop_many")
+           "stage_extracting", "recent_forget", "recent_open", "recent_none", "f_drop_many",
+           "p_json", "p_customize", "p_hint")
 
 
 def _env_models() -> list[str]:
@@ -96,8 +98,12 @@ def _env_models() -> list[str]:
 
 def model_view(p: ModelProfile) -> dict:
     provider, key_url = PROVIDERS.get(p.api_key_env or "", ("local server" if p.is_local else "custom", ""))
+    # The profile as the CLI reads it, minus api_key_env (the form's key field
+    # replaces it), so a user can read the numbers and edit a copy as "custom".
+    shown = {k: v for k, v in asdict(p).items() if k != "api_key_env" and v is not None}
     return {"key": p.key, "label": MODEL_LABELS.get(p.key, p.key), "model": p.model,
-            "is_local": p.is_local, "provider": provider, "key_url": key_url}
+            "is_local": p.is_local, "provider": provider, "key_url": key_url,
+            "json": json.dumps(shown, indent=2)}
 
 
 def scanner_view(key: str) -> dict:

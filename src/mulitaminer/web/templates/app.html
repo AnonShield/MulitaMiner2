@@ -43,12 +43,18 @@
         <div class="ft"><span class="n">3</span><h3>{{ t.f_model }}</h3></div>
         <select id="model" name="model" required>
           {% for m in models %}
-          <option value="{{ m.key }}" data-local="{{ 'yes' if m.is_local else 'no' }}" data-id="{{ m.model }}" data-provider="{{ m.provider }}" data-keyurl="{{ m.key_url }}"
+          <option value="{{ m.key }}" data-local="{{ 'yes' if m.is_local else 'no' }}" data-id="{{ m.model }}" data-provider="{{ m.provider }}" data-keyurl="{{ m.key_url }}" data-json="{{ m.json }}"
             {% if values.model == m.key %}selected{% endif %}>{{ m.label }}{% if m.is_local %} · {{ t.f_local }}{% endif %}</option>
           {% endfor %}
           <option value="{{ custom }}" data-local="maybe" {% if values.model == custom %}selected{% endif %}>{{ t.f_custom }}</option>
         </select>
         <p class="modelid" id="modelid"></p>
+        <details class="pjson" id="pjson">
+          <summary>{{ t.p_json }}</summary>
+          <pre id="pjson-pre"></pre>
+          <p class="hint">{{ t.p_hint }}</p>
+          <button type="button" class="btn btn-ghost" id="pjson-customize">{{ t.p_customize }}</button>
+        </details>
 
         <div id="custom-box" hidden>
           <label class="lb" for="profile_json">{{ t.f_profile }} <small>· {{ t.f_profile_sub }}</small></label>
@@ -170,9 +176,12 @@
   const hint = document.getElementById('key-hint');
   const mid = document.getElementById('modelid');
   const custom = document.getElementById('custom-box');
+  const pjson = document.getElementById('pjson'), ppre = document.getElementById('pjson-pre');
   const syncModel = () => {
     const o = model.selectedOptions[0], local = o.dataset.local;
     custom.hidden = local !== 'maybe';
+    pjson.hidden = local === 'maybe';
+    if (local !== 'maybe') ppre.textContent = o.dataset.json || '';
     key.readOnly = local === 'yes';
     key.required = local === 'no';
     key.placeholder = local === 'yes' ? T.f_key_local_ph : 'sk-…';
@@ -184,6 +193,11 @@
       ? ' <a href="' + o.dataset.keyurl + '" target="_blank" rel="noopener">' + T.f_get_key.replace('{p}', o.dataset.provider) + ' ↗</a>' : '');
   };
   model.addEventListener('change', syncModel); syncModel();
+  document.getElementById('pjson-customize').addEventListener('click', () => {
+    document.getElementById('profile_json').value = ppre.textContent;
+    model.value = '{{ custom }}'; pjson.open = false; syncModel();
+    document.getElementById('profile_json').focus();
+  });
   key.addEventListener('focus', () => { if (key.readOnly) { note.classList.add('flash'); setTimeout(() => note.classList.remove('flash'), 1600); } });
 
   document.getElementById('toggle-key').addEventListener('click', function () {
