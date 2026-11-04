@@ -18,8 +18,10 @@ FINDING = b"SMTP too long line on 127.0.0.1"
 
 def fake_run(config, client=None, run_dir=None, doc=None, progress=None):
     """Stand-in for pipeline.run: emits progress and writes every download."""
+    import logging
     assert config.formats == jobs.EXPORTS
     assert config.input_path.read_bytes() == PDF   # the worker decrypts the upload for the run
+    logging.getLogger("mulitaminer.pipeline").info("Segmented 3 finding blocks")
     progress.stage("reading")
     progress.segmented(3)
     progress.chunk_done(3, 3)
@@ -38,9 +40,12 @@ def client(tmp_path, monkeypatch):
         yield c
 
 
+UPLOAD_NAME = "acme-corp internal scan (final).pdf"   # says whose network it is
+
+
 def submit(client, **overrides):
     data = {"scanner": "openvas", "model": "deepseek", "api_key": KEY} | overrides
-    return client.post("/jobs", data=data, files={"report": ("r.pdf", PDF, "application/pdf")},
+    return client.post("/jobs", data=data, files={"report": (UPLOAD_NAME, PDF, "application/pdf")},
                        follow_redirects=False)
 
 
@@ -65,11 +70,13 @@ def test_submit_poll_download(client, tmp_path):
     status = wait_done(client, token)
     assert status["status"] == "done"
     assert status["done_blocks"] == 3 and status["total_blocks"] == 3
-    assert client.get(f"/jobs/{token}").status_code == 200
-    for slug in jobs.DOWNLOADS:
+    assert any("Segmented 3 finding blocks" in line for line in status["log"])
+    assert "Segmented 3 finding blocks" in client.get(f"/jobs/{token}").text
+    for slug, (filename, _) in jobs.DOWNLOADS.items():
         r = client.get(f"/jobs/{token}/download/{slug}")
         assert r.content == FINDING, slug
-        assert "mulitaminer-openvas-" in r.headers["content-disposition"]
+        suffix = filename.split("results", 1)[1]
+        assert f'filename="openvas-acme-corp_internal_scan_final{suffix}"' in r.headers["content-disposition"]
     assert client.get(f"/jobs/{token}/download/pdf").status_code == 404
     assert client.get(f"/jobs/{jobs.job_id(token)}").status_code == 404   # the id alone opens nothing
 
@@ -83,7 +90,7 @@ def test_secrets_and_content_never_on_disk_in_clear(client, tmp_path, caplog):
             data = path.read_bytes()
             assert KEY.encode() not in data, path
             assert PDF not in data and FINDING not in data, path
-            assert token.encode() not in data, path
+            assert token.encode() not in data and b"acme" not in data, path
     assert KEY not in caplog.text and token not in caplog.text
     job = client.app.state.store.get(jobs.job_id(token))
     assert job.api_key is None and job.cipher is None
@@ -169,7 +176,7 @@ def test_run_dir_becomes_one_archive(client, tmp_path):
     token = token_of(submit(client))
     wait_done(client, token)
     job_dir = tmp_path / "jobs" / jobs.job_id(token)
-    assert sorted(p.name for p in job_dir.iterdir()) == ["input.pdf.enc", "job.json", "results.tar.enc"]
+    assert sorted(p.name for p in job_dir.iterdir()) == ["input.pdf.enc", "job.json", "name.enc", "results.tar.enc"]
 
 
 def test_plaintext_never_written_to_data_dir(client, tmp_path, monkeypatch):

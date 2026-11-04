@@ -70,6 +70,12 @@ section.block>.wrap>h2{margin-top:.5rem}
 .chips{display:flex;flex-wrap:wrap;gap:.45rem}
 .chip{font:500 .78rem var(--mono);color:var(--text2);background:var(--elevated);border:1px solid var(--border);border-radius:999px;padding:.3rem .7rem}
 .chip.on{color:var(--amber);border-color:rgba(243,147,35,.4)}
+a.chip{text-decoration:none;transition:border-color .12s,color .12s,background .12s}
+a.chip:hover{border-color:var(--accent);color:var(--text);background:var(--accent-soft)}
+.term{margin:.6rem 0 0;background:#0a0908;border:1px solid var(--border);border-radius:var(--r-sm);padding:.7rem .9rem;max-height:220px;overflow:auto;font:.74rem/1.55 var(--mono);color:var(--text2);white-space:pre-wrap}
+.term .w{color:var(--amber)}
+.term:empty{display:none}
+:root[data-theme=light] .term{background:#1a1a17;color:#c9c7bd}
 .badge{display:inline-flex;align-items:center;gap:.45rem;font:500 .78rem var(--mono);color:var(--text2);border:1px solid var(--border2);border-radius:999px;padding:.35rem .8rem;background:var(--raised)}
 .badge i{width:.5rem;height:.5rem;border-radius:999px;background:var(--ok);display:inline-block}
 .award{font:600 .7rem var(--mono);color:var(--amber);background:rgba(243,147,35,.12);border-radius:999px;padding:.2rem .6rem;letter-spacing:.04em}

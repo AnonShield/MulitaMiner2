@@ -175,9 +175,12 @@ A browser front end for `extract` (upload a PDF, pick scanner and model,
 download the results) is in [docs/WEB.md](docs/WEB.md):
 
 ```bash
-uv sync --group web && uv run mulitaminer web                           # http://localhost:8000
-docker compose -f docker-compose.yml -f docker-compose.web.yml up web   # same, with the local model on Ollama
+docker run -d -p 127.0.0.1:8000:8000 -v mulita-web:/data bia18/mulitaminer:web   # no clone needed, cloud models
+uv sync --group web && uv run mulitaminer web                                  # from a clone
+docker compose -f docker-compose.yml -f docker-compose.web.yml up web          # from a clone, with the local model on Ollama
 ```
+
+Open <http://localhost:8000>.
 
 ## Evaluation and experiments
 

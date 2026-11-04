@@ -1,11 +1,11 @@
-# Publishes the Docker images to Docker Hub, next to anonshield/anon, so nobody
+# Publishes the Docker images to Docker Hub, so nobody
 # has to clone the repo to run the tool:
-#   anonshield/mulitaminer:web     the browser front end (docs/WEB.md)
-#   anonshield/mulitaminer:latest  the CLI (docs/DOCKER.md)
+#   bia18/mulitaminer:web     the browser front end (docs/WEB.md)
+#   bia18/mulitaminer:latest  the CLI (docs/DOCKER.md)
 # A release adds :X.Y.Z-web and :X.Y.Z.
 #
 # Secrets (repository settings > Secrets and variables > Actions):
-#   DOCKERHUB_USERNAME  a Docker Hub user with push access to the anonshield org
+#   DOCKERHUB_USERNAME  the Docker Hub user that owns the namespace
 #   DOCKERHUB_TOKEN     an access token of that user (Read & Write), not the password
 name: Docker image
 
@@ -21,7 +21,7 @@ permissions:
   contents: read
 
 env:
-  IMAGE: anonshield/mulitaminer
+  IMAGE: bia18/mulitaminer
 
 jobs:
   build:

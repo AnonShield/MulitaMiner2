@@ -29,6 +29,10 @@
     <p class="hint">{{ t.j_safe.format(h=retention_h) }}</p>
   </div>
 
+  <p class="lb" id="term-lb" style="margin-top:1.2rem" {% if not job.log %}hidden{% endif %}>{{ t.j_log }}</p>
+  <pre class="term" id="term">{% for line in job.log %}{{ line }}
+{% endfor %}</pre>
+
   <div id="done" {% if job.status != 'done' %}hidden{% endif %}>
     <div class="tiles">
       <div class="tile"><div class="v">{{ job.records if job.records is not none else '' }}</div><div class="l">{{ t.t_records }}</div></div>
@@ -39,12 +43,13 @@
     <div class="actions">
       <a class="btn btn-primary" href="/jobs/{{ token }}/download/xlsx">{{ t.dl }} XLSX</a>
       <a class="btn btn-primary" href="/jobs/{{ token }}/download/csv">{{ t.dl }} CSV</a>
+      <a class="btn btn-primary" href="/jobs/{{ token }}/download/json">{{ t.dl }} JSON</a>
       <a class="btn btn-ghost" href="/app">{{ t.j_another }}</a>
     </div>
     <p class="lb" style="margin-top:1.3rem">{{ t.j_also }}</p>
     <div class="chips">
-      {% for slug, (file, label) in downloads.items() if slug not in ('xlsx', 'csv') %}
-      <a class="chip" href="/jobs/{{ token }}/download/{{ slug }}" style="text-decoration:none">{{ label }} ↓</a>
+      {% for slug, (file, label) in downloads.items() if slug not in ('xlsx', 'csv', 'json') %}
+      <a class="chip" href="/jobs/{{ token }}/download/{{ slug }}">{{ label }} ↓</a>
       {% endfor %}
     </div>
     <p class="hint">{{ t.j_also_p }}</p>
@@ -89,6 +94,11 @@
       ? (j.queue_position ? T.q_pos.replace('{n}', j.queue_position + 1) : T.q_next)
       : (T['stage_' + j.stage] || j.stage || T.starting);
     mark(j.status === 'running' ? j.stage : '');
+    if (j.log && j.log.length) {
+      const term = $('term'), atBottom = term.scrollHeight - term.scrollTop - term.clientHeight < 8;
+      term.textContent = j.log.join('\n') + '\n'; $('term-lb').hidden = false;
+      if (atBottom) term.scrollTop = term.scrollHeight;
+    }
     const bar = $('bar');
     if (j.total_blocks) {
       bar.removeAttribute('data-indeterminate');

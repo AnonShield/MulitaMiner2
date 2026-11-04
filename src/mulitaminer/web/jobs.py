@@ -14,6 +14,7 @@ import ipaddress
 import json
 import logging
 import queue
+import re
 import secrets
 import shutil
 import socket
@@ -94,6 +95,7 @@ class Job:
     profile: ModelProfile | None = field(default=None, repr=False, compare=False)
     api_key: str | None = field(default=None, repr=False, compare=False)
     cipher: Fernet | None = field(default=None, repr=False, compare=False)
+    log: list[str] = field(default_factory=list, repr=False, compare=False)  # live view only
 
     @property
     def finished(self) -> bool:
@@ -142,6 +144,29 @@ def build_client(profile: ModelProfile, api_key: str | None) -> LLMClient:
     return LLMClient(profile, transport=transport)
 
 
+def safe_stem(filename: str) -> str:
+    """The upload's base name, without extension, reduced to a safe charset."""
+    stem = Path(filename or "report").stem
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "_", stem).strip("._") or "report"
+    return stem[:60]
+
+
+class JobLogHandler(logging.Handler):
+    """Collects the pipeline's log lines for one job: only records emitted
+    from the worker thread, so concurrent server logging never mixes in."""
+
+    def __init__(self, job: Job, ident: int, keep: int = 300):
+        super().__init__(level=logging.INFO)
+        self.job, self.ident, self.keep = job, ident, keep
+        self.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s", "%H:%M:%S"))
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.thread != self.ident or not record.name.startswith("mulitaminer"):
+            return
+        self.job.log.append(self.format(record))
+        del self.job.log[:-self.keep]
+
+
 def _seal(run_dir: Path, cipher: Fernet, job_dir: Path) -> None:
     """Pack the run dir into one encrypted archive in the job dir. One archive
     rather than a .enc per file: the per-file rename-and-delete pattern is
@@ -183,7 +208,8 @@ class JobStore:
             self.save(job)
 
     def create(self, pdf: bytes, scanner: str, model: str, profile: ModelProfile,
-               api_key: str | None, profile_json: dict | None = None) -> tuple[Job, str]:
+               api_key: str | None, profile_json: dict | None = None,
+               filename: str = "report.pdf") -> tuple[Job, str]:
         """Store the job and return it with its token (the link; never kept)."""
         token = secrets.token_urlsafe(32)
         cipher = fernet(token)
@@ -193,6 +219,8 @@ class JobStore:
         d = self.job_dir(job.id)
         d.mkdir()
         (d / f"input.pdf{ENC}").write_bytes(cipher.encrypt(pdf))
+        # The upload's name can say whose network it is: ciphertext like the rest.
+        (d / f"name{ENC}").write_bytes(cipher.encrypt(safe_stem(filename).encode()))
         with self._lock:
             self._jobs[job.id] = job
         self.save(job)
@@ -203,9 +231,14 @@ class JobStore:
 
     def save(self, job: Job) -> None:
         job.updated_at = _now()
-        data = {k: v for k, v in asdict(job).items() if k not in ("profile", "api_key", "cipher")}
+        data = {k: v for k, v in asdict(job).items()
+                if k not in ("profile", "api_key", "cipher", "log")}
         (self.job_dir(job.id) / "job.json").write_text(
             json.dumps(data, indent=2), encoding="utf-8")
+
+    def read_name(self, job: Job, cipher: Fernet) -> str:
+        path = self.job_dir(job.id) / f"name{ENC}"
+        return cipher.decrypt(path.read_bytes()).decode() if path.is_file() else "report"
 
     def read_result(self, job: Job, cipher: Fernet, filename: str) -> bytes | None:
         path = self.job_dir(job.id) / RESULTS
@@ -267,6 +300,9 @@ class Worker:
         self.store = store
         self._queue: queue.Queue[str] = queue.Queue()
         self._thread = threading.Thread(target=self._loop, daemon=True, name="mulita-web-worker")
+        # The CLI sets this through basicConfig; the server has no such setup,
+        # and without it the pipeline's INFO lines (the live log) never reach a handler.
+        logging.getLogger("mulitaminer").setLevel(logging.INFO)
 
     def start(self) -> None:
         self._thread.start()
@@ -288,6 +324,8 @@ class Worker:
         # only, in the OS temp dir. The data dir only ever holds ciphertext:
         # desktop antivirus stalls a process that writes random-looking files
         # into Documents, and on a dev machine the data dir may live there.
+        handler = JobLogHandler(job, threading.get_ident())
+        logging.getLogger().addHandler(handler)
         with tempfile.TemporaryDirectory(prefix="mulitaminer-job-") as tmp:
             work = Path(tmp)
             pdf = work / "input.pdf"
@@ -309,6 +347,7 @@ class Worker:
                 job.status, job.error = "failed", msg
                 log.warning("job %s failed: %s", job.id, msg)
             finally:
+                logging.getLogger().removeHandler(handler)
                 if (work / "run").is_dir():
                     _seal(work / "run", job.cipher, d)   # also on failure: run.log is the evidence
                 job.finished_at = _now()

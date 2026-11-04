@@ -212,7 +212,8 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         else:
             return bad(t["e_model"].format(m=model))
 
-        job, token = store.create(pdf, scanner, model, profile, api_key, profile_json=cfg)
+        job, token = store.create(pdf, scanner, model, profile, api_key, profile_json=cfg,
+                                  filename=report.filename or "report.pdf")
         worker.submit(job)
         return RedirectResponse(f"/jobs/{token}", status_code=303)
 
@@ -235,6 +236,7 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
             "records": job.records, "duration_s": job.duration_s, "cost_usd": job.cost_usd,
             "error": job.error, "updated_at": job.updated_at,
             "scanner": job.scanner, "model": job.model, "model_label": label,
+            "log": job.log[-200:],
         }
 
     @app.get("/jobs/{token}")
@@ -257,9 +259,9 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         if data is None:
             raise HTTPException(404, "Not ready.")
         suffix = filename.split("results", 1)[1]   # ".xlsx", ".cais.csv", ...
+        name = f"{job.scanner}-{store.read_name(job, fernet(token))}{suffix}"
         return Response(data, media_type=MEDIA.get(Path(filename).suffix, "application/octet-stream"),
-                        headers={"Content-Disposition":
-                                 f'attachment; filename="mulitaminer-{job.scanner}-{job.id[:8]}{suffix}"'})
+                        headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
     @app.get("/api/health")
     def health():
