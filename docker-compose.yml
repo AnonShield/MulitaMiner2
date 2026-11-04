@@ -19,6 +19,11 @@ services:
     # Pinned: changing the Ollama version moves the scores (Mulita-Training
     # TRAINING.md 6h), so compare numbers only within the same tag.
     image: ollama/ollama:0.34.0
+    environment:
+      # Ollama's OpenAI-compatible endpoint ignores the per-request num_ctx the
+      # tool sends (verified on 0.40.14), and a registered model defaults to
+      # 4096, which a 3-finding chunk exceeds. Set the server-wide default.
+      OLLAMA_CONTEXT_LENGTH: "16384"
     volumes:
       - ollama:/root/.ollama
     # No host port: the other services share this netns, and a host Ollama
