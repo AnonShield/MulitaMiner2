@@ -165,6 +165,13 @@ def test_restart_fails_unfinished_jobs_and_shreds_plaintext(tmp_path):
     assert (store.job_dir(job.id) / "input.pdf.enc").exists()
 
 
+def test_run_dir_becomes_one_archive(client, tmp_path):
+    token = token_of(submit(client))
+    wait_done(client, token)
+    job_dir = tmp_path / "jobs" / jobs.job_id(token)
+    assert sorted(p.name for p in job_dir.iterdir()) == ["input.pdf.enc", "job.json", "results.tar.enc"]
+
+
 def test_jobs_run_one_at_a_time(tmp_path, monkeypatch):
     gate = threading.Event()
 

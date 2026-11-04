@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import io
 import ipaddress
 import json
 import logging
@@ -16,6 +17,7 @@ import queue
 import secrets
 import shutil
 import socket
+import tarfile
 import threading
 import time
 from dataclasses import asdict, dataclass, field, replace
@@ -51,6 +53,7 @@ DOWNLOADS = {
 # Marks a web-form profile as keyed; the dataclass means "keyless" by None.
 FORM_KEY_ENV = "WEB_FORM"
 ENC = ".enc"
+RESULTS = "results.tar" + ENC   # the whole run dir, one encrypted archive
 
 
 def _now() -> str:
@@ -138,19 +141,21 @@ def build_client(profile: ModelProfile, api_key: str | None) -> LLMClient:
     return LLMClient(profile, transport=transport)
 
 
-def _seal(directory: Path, cipher: Fernet) -> None:
-    """Encrypt every plaintext file under directory in place (name + .enc)."""
-    for path in directory.rglob("*"):
-        if path.is_file() and path.suffix != ENC:
-            path.with_name(path.name + ENC).write_bytes(cipher.encrypt(path.read_bytes()))
-            path.unlink()
+def _seal(run_dir: Path, cipher: Fernet) -> None:
+    """Pack the run dir into one encrypted archive next to it, then drop it.
+    One archive rather than a .enc per file: the per-file rename-and-delete
+    pattern is what desktop antivirus heuristics call ransomware."""
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tar:
+        tar.add(run_dir, arcname="run")
+    (run_dir.parent / RESULTS).write_bytes(cipher.encrypt(buf.getvalue()))
+    shutil.rmtree(run_dir, ignore_errors=True)
 
 
-def _shred(directory: Path) -> None:
+def _shred(job_dir: Path) -> None:
     """Delete any plaintext left behind (a job cut short by a restart)."""
-    for path in directory.rglob("*"):
-        if path.is_file() and path.suffix != ENC and path.name != "job.json":
-            path.unlink()
+    (job_dir / "input.pdf").unlink(missing_ok=True)
+    shutil.rmtree(job_dir / "run", ignore_errors=True)
 
 
 class JobStore:
@@ -203,10 +208,15 @@ class JobStore:
             json.dumps(data, indent=2), encoding="utf-8")
 
     def read_result(self, job: Job, cipher: Fernet, filename: str) -> bytes | None:
-        path = self.job_dir(job.id) / "run" / f"{filename}{ENC}"
+        path = self.job_dir(job.id) / RESULTS
         if job.status != "done" or not path.is_file():
             return None
-        return cipher.decrypt(path.read_bytes())
+        with tarfile.open(fileobj=io.BytesIO(cipher.decrypt(path.read_bytes()))) as tar:
+            try:
+                member = tar.extractfile(f"run/{filename}")
+            except KeyError:
+                return None
+            return member.read() if member else None
 
     def queue_position(self, job: Job) -> int:
         """Queued jobs created before this one (0 = next up)."""
