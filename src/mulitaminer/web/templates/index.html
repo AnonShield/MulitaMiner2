@@ -12,10 +12,14 @@
       <span class="fine">{{ t.fine.format(h=retention_h) }}</span>
     </div>
 
-    <div class="demo">
+    <div class="demo" id="demo">
       <div class="pane doc">
-        <div class="ph">{{ t.demo_in }}</div>
-        <div class="docbody">
+        <div class="ph">{{ t.demo_in }}<span class="tabs" role="tablist" aria-label="Scanner">
+          <button type="button" role="tab" aria-selected="true">OpenVAS</button>
+          <button type="button" role="tab" aria-selected="false">Nessus</button>
+          <button type="button" role="tab" aria-selected="false">Qualys</button></span></div>
+        <div class="docs">
+        <div class="docbody on">
           <span class="sev">High (CVSS: 7.5)</span>
           <h4>NVT: SMTP too long line</h4>
           <h5>Summary</h5>
@@ -26,6 +30,33 @@
           <p><b>Solution type:</b> VendorFix<br>Contact the vendor of the antivirus scanner to get an update.</p>
           <h5>Vulnerability Detection Method</h5>
           <p>Details: SMTP too long line<br>OID: 1.3.6.1.4.1.25623.1.0.11270</p>
+        </div>
+        <div class="docbody">
+          <span class="sev med">Medium</span>
+          <h4>134220 - nginx &lt; 1.17.7 Information Disclosure</h4>
+          <h5>Synopsis</h5>
+          <p>The remote web server is affected by an information disclosure vulnerability.</p>
+          <h5>Solution</h5>
+          <p>Upgrade to nginx version 1.17.7 or later.</p>
+          <h5>CVSS v3.0 Base Score</h5>
+          <p>5.3 (CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N)</p>
+          <h5>References</h5>
+          <p>CVE &nbsp;CVE-2019-20372<br>XREF &nbsp;IAVB:2020-B-0013-S</p>
+          <h5>Plugin Output</h5>
+          <p>tcp/80/www<br>URL : http://172.30.15.1/<br>Installed version : 1.10.3<br>Fixed version : 1.17.7</p>
+        </div>
+        <div class="docbody">
+          <h4><span class="sev">5</span>EOL/Obsolete Software: MySQL 5.5.x Detected</h4>
+          <p>QID: 105820<br>Category: Security Policy<br>PCI Vuln: Yes</p>
+          <h5>THREAT:</h5>
+          <p>MySQL version 5.5 is detected on the host.<br>Product Support for MySQL 5.5 ended in December 2018. No further bug fixes, enhancements, security updates or technical support will be available for this release.</p>
+          <h5>IMPACT:</h5>
+          <p>The system is at high risk of being exposed to security vulnerabilities.</p>
+          <h5>SOLUTION:</h5>
+          <p>Customers are advised to update to the latest supported version of MySQL.</p>
+          <h5>RESULTS:</h5>
+          <p>5.5.60-0ubuntu0.14.04.1</p>
+        </div>
         </div>
       </div>
       <div class="link" aria-hidden="true">
@@ -40,7 +71,8 @@
       </div>
       <div class="pane">
         <div class="ph">{{ t.demo_out }}</div>
-<pre class="json">{
+        <div class="pres">
+<pre class="json ghost">{
   <span class="k">"Name"</span>: <span class="s">"SMTP too long line"</span>,
   <span class="k">"severity"</span>: <span class="s">"HIGH"</span>,
   <span class="k">"cvss"</span>: <span class="n">7.5</span>,
@@ -59,6 +91,45 @@
   ],
   <span class="k">"source"</span>: <span class="s">"OPENVAS"</span>
 }</pre>
+<pre class="json ghost">{
+  <span class="k">"Name"</span>: <span class="s">"nginx &lt; 1.17.7 Information Disclosure"</span>,
+  <span class="k">"severity"</span>: <span class="s">"MEDIUM"</span>,
+  <span class="k">"cvss"</span>: <span class="n">5.3</span>,
+  <span class="k">"host"</span>: <span class="s">"172.30.15.1"</span>,
+  <span class="k">"port"</span>: <span class="n">80</span>,
+  <span class="k">"protocol"</span>: <span class="s">"tcp"</span>,
+  <span class="k">"plugin"</span>: <span class="n">134220</span>,
+  <span class="k">"description"</span>: <span class="s">"The remote web server is affected by an
+    information disclosure vulnerability."</span>,
+  <span class="k">"solution"</span>: <span class="s">"Upgrade to nginx version 1.17.7 or later."</span>,
+  <span class="k">"references"</span>: [
+    <span class="s">"http://www.nessus.org/u?fd026623"</span>,
+    <span class="s">"CVE-2019-20372"</span>, <span class="s">"IAVB:2020-B-0013-S"</span>
+  ],
+  <span class="k">"detection_result"</span>: <span class="s">"URL: http://172.30.15.1/ · Installed
+    version: 1.10.3 · Fixed version: 1.17.7"</span>,
+  <span class="k">"source"</span>: <span class="s">"NESSUS"</span>
+}</pre>
+<pre class="json ghost">{
+  <span class="k">"Name"</span>: <span class="s">"EOL/Obsolete Software: MySQL 5.5.x Detected"</span>,
+  <span class="k">"severity"</span>: <span class="s">"CRITICAL"</span>,
+  <span class="k">"cvss"</span>: <span class="n">null</span>,
+  <span class="k">"host"</span>: <span class="s">"172.30.9.3"</span>,
+  <span class="k">"port"</span>: <span class="n">null</span>,
+  <span class="k">"protocol"</span>: <span class="n">null</span>,
+  <span class="k">"plugin"</span>: <span class="n">105820</span>,
+  <span class="k">"category"</span>: <span class="s">"Security Policy"</span>,
+  <span class="k">"description"</span>: <span class="s">"MySQL version 5.5 is detected on the host.
+    Product Support for MySQL 5.5 ended in December 2018…"</span>,
+  <span class="k">"impact"</span>: <span class="s">"The system is at high risk of being exposed
+    to security vulnerabilities."</span>,
+  <span class="k">"solution"</span>: <span class="s">"Customers are advised to update to the
+    latest supported version of MySQL."</span>,
+  <span class="k">"detection_result"</span>: <span class="s">"5.5.60-0ubuntu0.14.04.1"</span>,
+  <span class="k">"source"</span>: <span class="s">"QUALYS"</span>
+}</pre>
+<pre class="json typed"></pre>
+        </div>
       </div>
     </div>
     <p class="src">{{ t.demo_cap }}</p>
@@ -241,27 +312,53 @@
 {% block scripts %}
 <script>
 (function () {
-  // The extracted record types itself once, keeping the syntax colours.
-  const out = document.querySelector('.demo pre.json');
-  if (out) {
-    const chunks = [...out.childNodes].map(n => ({c: n.nodeType === 3 ? null : n.className, t: n.textContent}));
-    const total = chunks.reduce((a, ch) => a + ch.t.length, 0);
+  // One real finding per scanner tab; the record types itself out, keeping the
+  // syntax colours. Tabs cycle on their own until someone clicks one.
+  const demo = document.getElementById('demo');
+  if (demo) {
+    const dtabs = [...demo.querySelectorAll('.tabs button')];
+    const docs = [...demo.querySelectorAll('.docbody')];
+    const ghosts = [...demo.querySelectorAll('pre.ghost')];
+    const out = demo.querySelector('pre.typed');
     const esc = x => x.replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
-    const render = n => {
-      let html = '', left = n;
-      for (const ch of chunks) {
-        if (left <= 0) break;
-        const part = esc(ch.t.slice(0, left)); left -= ch.t.length;
-        html += ch.c ? '<span class="' + ch.c + '">' + part + '</span>' : part;
-      }
-      out.innerHTML = html + '<span class="cur"></span>';
+    let typing = null, cycle = null, cur = 0;
+    const typeFrom = ghost => {
+      clearTimeout(typing);
+      const chunks = [...ghost.childNodes].map(n => ({c: n.nodeType === 3 ? null : n.className, t: n.textContent}));
+      const total = chunks.reduce((a, ch) => a + ch.t.length, 0);
+      const render = n => {
+        let html = '', left = n;
+        for (const ch of chunks) {
+          if (left <= 0) break;
+          const part = esc(ch.t.slice(0, left)); left -= ch.t.length;
+          html += ch.c ? '<span class="' + ch.c + '">' + part + '</span>' : part;
+        }
+        out.innerHTML = html + '<span class="cur"></span>';
+      };
+      let n = 0;
+      const tick = () => {
+        n = Math.min(total, n + 2); render(n);
+        if (n < total) typing = setTimeout(tick, 26);
+        else typing = setTimeout(() => { const c = out.querySelector('.cur'); if (c) c.remove(); }, 1500);
+      };
+      render(0); typing = setTimeout(tick, 400);
     };
-    let n = 0;
-    const tick = () => {
-      n = Math.min(total, n + 2); render(n);
-      if (n < total) setTimeout(tick, 26); else setTimeout(() => { const c = out.querySelector('.cur'); if (c) c.remove(); }, 1500);
+    const pick = i => {
+      cur = i;
+      dtabs.forEach((b, k) => b.setAttribute('aria-selected', k === i ? 'true' : 'false'));
+      docs.forEach((d, k) => d.classList.toggle('on', k === i));
+      typeFrom(ghosts[i]);
     };
-    render(0); setTimeout(tick, 400);
+    const startCycle = () => { cycle = setInterval(() => pick((cur + 1) % dtabs.length), 11000); };
+    const stopCycle = () => { clearInterval(cycle); cycle = null; };
+    dtabs.forEach((b, k) => b.addEventListener('click', () => { stopCycle(); demo.dataset.touched = '1'; pick(k); }));
+    pick(0);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(es => es.forEach(e => {
+        if (e.isIntersecting && !cycle && demo.dataset.touched !== '1') startCycle();
+        else if (!e.isIntersecting && cycle) stopCycle();
+      }), {threshold: .4}).observe(demo);
+    }
   }
 
   const stages = document.getElementById('stages');
