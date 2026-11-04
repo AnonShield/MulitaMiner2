@@ -127,7 +127,7 @@ a.chip:hover .ic{color:var(--accent-h)}
 .demo .pane{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;min-width:0}
 .demo .pane .ph{display:flex;justify-content:space-between;align-items:center;padding:.6rem .9rem;border-bottom:1px solid var(--border);font:600 .7rem var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .demo .pane .ph span{color:var(--text2);letter-spacing:0;text-transform:none;font-weight:400}
-.demo pre{margin:0;padding:.9rem 1rem;font:.74rem/1.55 var(--mono);color:var(--text2);white-space:pre-wrap;overflow:auto;max-height:330px}
+.demo pre{margin:0;padding:.9rem 1rem;font:.74rem/1.55 var(--mono);color:var(--text2);white-space:pre-wrap}
 .demo pre .k{color:var(--amber)}.demo pre .s{color:#d7c6a8}.demo pre .n{color:#8fd3a8}.demo pre .h{color:var(--text)}
 :root[data-theme=light] .demo pre .s{color:#6b4a1c}
 :root[data-theme=light] .demo pre .n{color:#1e6b3a}
@@ -375,13 +375,13 @@ main,footer{position:relative;z-index:1}
 @keyframes blink{to{opacity:0}}
 
 /* the left demo pane looks like the PDF page it comes from */
-.doc .docbody{padding:1rem 1.1rem 1.1rem;font:.8rem/1.5 var(--sans);color:var(--text2);max-height:330px;overflow:auto}
+.doc .docbody{padding:1rem 1.1rem 1.1rem;font:.8rem/1.5 var(--sans);color:var(--text2)}
 .doc .sev{display:inline-block;background:#b3261e;color:#fff;font:600 .72rem var(--sans);padding:.2rem .55rem;border-radius:3px;letter-spacing:.02em}
 .doc h4{margin:.5rem 0 .7rem;font:700 .95rem/1.3 var(--sans);color:var(--text)}
 .doc h5{margin:.75rem 0 .15rem;font:700 .78rem var(--sans);color:var(--text);text-transform:none}
 .doc p{margin:0}
 .doc p b{color:var(--text);font-weight:600}
-.demo pre.json{min-height:330px}
+.demo pre.json{min-height:300px}
 
 /* eye toggle on the key field */
 .keyrow .btn svg{display:block}

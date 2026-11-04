@@ -80,11 +80,11 @@ document.getElementById('theme').addEventListener('click', () => {
   root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';   // dark is the default
   try { localStorage.setItem('theme', root.dataset.theme); } catch (e) {}
 });
-const top = document.getElementById('top'), menuBtn = document.getElementById('menu');
-const setMenu = open => { top.classList.toggle('open', open); menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
-menuBtn.addEventListener('click', () => setMenu(!top.classList.contains('open')));
+const topbar = document.getElementById('top'), menuBtn = document.getElementById('menu');
+const setMenu = open => { topbar.classList.toggle('open', open); menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+menuBtn.addEventListener('click', () => setMenu(!topbar.classList.contains('open')));
 document.addEventListener('click', ev => {   // tap outside the panel closes it
-  if (top.classList.contains('open') && !ev.target.closest('#nav') && !ev.target.closest('#menu')) setMenu(false);
+  if (topbar.classList.contains('open') && !ev.target.closest('#nav') && !ev.target.closest('#menu')) setMenu(false);
 });
 document.getElementById('nav').addEventListener('click', ev => { if (ev.target.closest('a')) setMenu(false); });
 </script>
