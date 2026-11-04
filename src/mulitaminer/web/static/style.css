@@ -322,7 +322,7 @@ input:read-only{color:var(--muted);background:var(--raised);cursor:not-allowed}
 .blist .cnt{font:.72rem var(--mono);color:var(--muted);min-width:4.5em;text-align:right}
 
 /* profile JSON viewer */
-.pjson{margin-top:.5rem;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--raised)}
+.pjson{margin:.5rem 0 .9rem;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--raised)}
 .pjson summary{cursor:pointer;list-style:none;padding:.45rem .75rem;font:600 .72rem var(--mono);color:var(--text2);text-transform:uppercase;letter-spacing:.08em}
 .pjson summary::-webkit-details-marker{display:none}
 .pjson summary:before{content:"+ ";color:var(--muted)}
