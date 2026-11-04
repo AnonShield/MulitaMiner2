@@ -16,9 +16,7 @@ services:
       model-register:
         condition: service_completed_successfully
     network_mode: "service:ollama"   # localhost:11434 reaches Ollama, like `mulita`
-    entrypoint: ["uv", "run", "--no-sync", "uvicorn", "mulitaminer.web.app:app"]
-    # No access log: the job link in the URL is also the decryption key.
-    command: ["--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+    command: ["web", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       MULITAMINER_WEB_DATA: /data
       # Your own machine: a custom endpoint may point at localhost / the LAN.

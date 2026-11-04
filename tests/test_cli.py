@@ -30,3 +30,15 @@ def test_export_command_regenerates_from_results_json(tmp_path):
 def test_scanners_and_formats_commands():
     assert "openvas" in runner.invoke(app, ["scanners"]).output
     assert "sarif" in runner.invoke(app, ["formats"]).output
+
+
+def test_web_command_serves_without_access_log(monkeypatch):
+    import uvicorn
+
+    calls = []
+    monkeypatch.setattr(uvicorn, "run", lambda *a, **k: calls.append((a, k)))
+    result = runner.invoke(app, ["web", "--port", "8123"])
+    assert result.exit_code == 0 and "8123" in result.output
+    (target,), kwargs = calls[0]
+    assert target == "mulitaminer.web.app:app"
+    assert kwargs["port"] == 8123 and kwargs["access_log"] is False and kwargs["reload"] is False

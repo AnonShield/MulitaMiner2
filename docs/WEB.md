@@ -18,10 +18,12 @@ Bare process (fastest; local models need an Ollama already running on
 
 ```bash
 uv sync --group web
-uv run uvicorn mulitaminer.web.app:app --reload --port 8000
+uv run mulitaminer web
 ```
 
-Open <http://localhost:8000>.
+Open <http://localhost:8000>. `--port` and `--host` change the address;
+`--reload` restarts the server when Python files change (templates and the
+stylesheet are picked up without it).
 
 With Docker, including the fine-tuned local model served by Ollama
 ([DOCKER.md](DOCKER.md) explains that part):
@@ -127,7 +129,11 @@ mulita.anonshield.org {
     log {
         output discard
     }
-    reverse_proxy mulitaminer-web:8000
+    reverse_proxy mulitaminer-web:8000 {
+        # Overwrite, do not append: the app's rate limit reads the first
+        # address in this header, so a client must not be able to plant one.
+        header_up X-Forwarded-For {remote_host}
+    }
 }
 ```
 

@@ -414,5 +414,27 @@ def scanners() -> None:
         ui.echo(f"{key:<10} source={p.source:<11} max_vulns_per_chunk={p.max_vulns_per_chunk}")
 
 
+@app.command()
+def web(
+    host: str = typer.Option("127.0.0.1", "--host", help="0.0.0.0 to accept other machines"),
+    port: int = typer.Option(8000, "--port"),
+    reload: bool = typer.Option(False, "--reload", help="Restart on Python edits (development)"),
+    proxy_headers: bool = typer.Option(
+        False, "--proxy-headers",
+        help="Behind a reverse proxy: take the client address from X-Forwarded-For"),
+) -> None:
+    """Serve the browser front end (docs/WEB.md). Needs `uv sync --group web`."""
+    try:
+        import uvicorn
+    except ImportError:
+        ui.error("the web front end is not installed: uv sync --group web")
+        raise typer.Exit(code=1)
+    ui.echo(f"MulitaMiner web on http://{host}:{port}  (Ctrl+C to stop)")
+    # No access log: the job link in the URL is also that job's decryption key.
+    uvicorn.run("mulitaminer.web.app:app", host=host, port=port, reload=reload,
+                access_log=False, proxy_headers=proxy_headers,
+                forwarded_allow_ips="*" if proxy_headers else None)
+
+
 if __name__ == "__main__":
     app()

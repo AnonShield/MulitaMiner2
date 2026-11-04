@@ -11,11 +11,9 @@ services:
       context: .
       args:
         INSTALL_WEB: "true"
-    entrypoint: ["uv", "run", "--no-sync", "uvicorn", "mulitaminer.web.app:app"]
-    # --proxy-headers + forwarded-allow-ips: the rate limit sees the real client
-    # address behind Caddy. No access log: the job link in the URL is also the
-    # decryption key (keep it out of Caddy's log too, see docs/WEB.md).
-    command: ["--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*", "--no-access-log"]
+    # --proxy-headers: the rate limit sees the real client address behind Caddy
+    # (the Caddyfile block in docs/WEB.md sets X-Forwarded-For itself).
+    command: ["web", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
     environment:
       MULITAMINER_WEB_DATA: /data
       MULITAMINER_WEB_MODELS: deepseek,gpt-4o-mini,haiku,llama-3.3-70b
