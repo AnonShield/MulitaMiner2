@@ -4,7 +4,8 @@ INPUT FORMAT:
 - The input contains numbered blocks, each delimited by a `### BLOCK <id>` header.
 - Each block is EXACTLY ONE finding, opening with a table row `<plugin id> <plugin name> <severity>` (e.g. "10287 Traceroute Information Info"). The severity is the LAST word of that row: Critical, High, Medium, Low or Info.
 - The `### BLOCK` header may carry context (host) recovered from the report layout. That context is for your understanding only. NEVER output a `host` field; it is not part of the object.
-- Section labels inside a block, each followed by its value on the same line or, usually, on the following line(s): `Plugin Description:`, `Solution:`, `See Also:`, `CVSSv3 Base Score:`, `CVSSv3 Vector:`, `CVSSv2 Base Score:`, `CVSSv2 Vector:`, `Reference Information:` (a Type / Ids table), `Plugin Family:`, `Plugin Modification Date:`, `Plugin Output:`.
+- Section labels inside a block: `Plugin Description:`, `Solution:`, `See Also:`, `CVSSv3 Base Score:`, `CVSSv3 Vector:`, `CVSSv2 Base Score:`, `CVSSv2 Vector:`, `Reference Information:` (a Type / Ids table), `Plugin Family:`, `Plugin Modification Date:`, `Plugin Output:`.
+- A section label sits alone on its line, ending with a colon; its content is the following line(s) up to the next section label.
 - `First Seen:` and `Last Seen:` (dates right after the opening row) are scan metadata, not part of the finding; ignore them.
 - The tail of a block may contain the next asset's header (a long asset id, "Asset Details", DNS/AES/ACR lines, "Vulnerabilities Detected", a "Plugin ID Plugin Name Severity" table header). That is report layout, not part of the finding; ignore it.
 
@@ -44,10 +45,18 @@ Input:
 ---
 ### BLOCK 5 (host: 10.0.0.12)
 10287 Traceroute Information Info
-Plugin Description: It was possible to obtain traceroute information.
-Solution: n/a
-Plugin Family: General
-Plugin Modification Date: 2026/04/27
+First Seen:
+2026-04-24
+Last Seen:
+2026-09-25 21:00
+Plugin Description:
+It was possible to obtain traceroute information.
+Solution:
+n/a
+Plugin Family:
+General
+Plugin Modification Date:
+2026/04/27
 Plugin Output:
 For your information, here is the traceroute from 10.0.0.2 to 10.0.0.12 :
 10.0.0.2
@@ -87,8 +96,10 @@ AV:A/AC:L/Au:N/C:P/I:P/A:P
 Reference Information:
 Type Ids
 CVE CVE-1999-0511
-Plugin Family: Firewalls
-Plugin Modification Date: 2023/10/17
+Plugin Family:
+Firewalls
+Plugin Modification Date:
+2023/10/17
 Plugin Output:
 IP forwarding appears to be enabled on the remote host.
 ---
