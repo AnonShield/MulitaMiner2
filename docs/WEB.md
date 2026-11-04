@@ -37,12 +37,12 @@ Same address. The v4 model appears in the model list as `mulita-qwen2.5-1.5b-v4`
 
 ## Without cloning: the published image
 
-GitHub Actions publishes the image to the GitHub Container Registry on every
-push to `main` ([.github/workflows/docker-image.yml](../.github/workflows/docker-image.yml)),
+GitHub Actions publishes the image to Docker Hub, next to AnonShield's, on
+every push to `main` ([.github/workflows/docker-image.yml](../.github/workflows/docker-image.yml)),
 so a user needs Docker and nothing else:
 
 ```bash
-docker run -d --name mulita-web -p 127.0.0.1:8000:8000 -v mulita-web:/data ghcr.io/inari18/mulitaminer2:web
+docker run -d --name mulita-web -p 127.0.0.1:8000:8000 -v mulita-web:/data anonshield/mulitaminer:web
 ```
 
 That is the cloud-models setup (the key goes in the form). For the

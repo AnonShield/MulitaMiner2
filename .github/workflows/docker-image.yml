@@ -1,10 +1,12 @@
-# Publishes the Docker images to the GitHub Container Registry, so nobody has
-# to clone the repo to run the tool:
-#   ghcr.io/inari18/mulitaminer2:web     the browser front end (docs/WEB.md)
-#   ghcr.io/inari18/mulitaminer2:latest  the CLI (docs/DOCKER.md)
-# A release adds :X.Y.Z-web and :X.Y.Z. No account or secret beyond the
-# repository's own GITHUB_TOKEN; the packages appear under the repo's
-# "Packages" and are public once made so in their settings (one click, once).
+# Publishes the Docker images to Docker Hub, next to anonshield/anon, so nobody
+# has to clone the repo to run the tool:
+#   anonshield/mulitaminer:web     the browser front end (docs/WEB.md)
+#   anonshield/mulitaminer:latest  the CLI (docs/DOCKER.md)
+# A release adds :X.Y.Z-web and :X.Y.Z.
+#
+# Secrets (repository settings > Secrets and variables > Actions):
+#   DOCKERHUB_USERNAME  a Docker Hub user with push access to the anonshield org
+#   DOCKERHUB_TOKEN     an access token of that user (Read & Write), not the password
 name: Docker image
 
 on:
@@ -17,7 +19,9 @@ on:
 
 permissions:
   contents: read
-  packages: write
+
+env:
+  IMAGE: anonshield/mulitaminer
 
 jobs:
   build:
@@ -39,13 +43,12 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ${{ env.IMAGE }}
           flavor: |
             latest=${{ matrix.latest }}
             suffix=${{ matrix.suffix && format('-{0}', matrix.suffix) || '' }},onlatest=false
