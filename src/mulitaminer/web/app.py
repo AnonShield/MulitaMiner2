@@ -93,7 +93,9 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
                max_mb: float | None = None, retention_h: float | None = None,
                max_queue: int | None = None, allow_private: bool | None = None,
                rate_per_hour: int | None = None) -> FastAPI:
-    data_dir = data_dir or Path(os.getenv("MULITAMINER_WEB_DATA", "outputs/web"))
+    # Default outside the project tree: on a dev machine the repo tends to live
+    # under Documents, where desktop antivirus watches every write.
+    data_dir = data_dir or Path(os.getenv("MULITAMINER_WEB_DATA", Path.home() / ".mulitaminer" / "web"))
     models = models or _env_models() or sorted(all_models())
     max_bytes = int((max_mb or float(os.getenv("MULITAMINER_WEB_MAX_MB", "20"))) * 1024 * 1024)
     retention_h = retention_h or float(os.getenv("MULITAMINER_WEB_RETENTION_H", "24"))

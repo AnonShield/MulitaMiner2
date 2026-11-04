@@ -18,6 +18,7 @@ import secrets
 import shutil
 import socket
 import tarfile
+import tempfile
 import threading
 import time
 from dataclasses import asdict, dataclass, field, replace
@@ -141,15 +142,14 @@ def build_client(profile: ModelProfile, api_key: str | None) -> LLMClient:
     return LLMClient(profile, transport=transport)
 
 
-def _seal(run_dir: Path, cipher: Fernet) -> None:
-    """Pack the run dir into one encrypted archive next to it, then drop it.
-    One archive rather than a .enc per file: the per-file rename-and-delete
-    pattern is what desktop antivirus heuristics call ransomware."""
+def _seal(run_dir: Path, cipher: Fernet, job_dir: Path) -> None:
+    """Pack the run dir into one encrypted archive in the job dir. One archive
+    rather than a .enc per file: the per-file rename-and-delete pattern is
+    what desktop antivirus heuristics call ransomware."""
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w") as tar:
         tar.add(run_dir, arcname="run")
-    (run_dir.parent / RESULTS).write_bytes(cipher.encrypt(buf.getvalue()))
-    shutil.rmtree(run_dir, ignore_errors=True)
+    (job_dir / RESULTS).write_bytes(cipher.encrypt(buf.getvalue()))
 
 
 def _shred(job_dir: Path) -> None:
@@ -284,32 +284,36 @@ class Worker:
         job.status, job.started_at = "running", _now()
         self.store.save(job)
         d = self.store.job_dir(job.id)
-        pdf = d / "input.pdf"
-        try:
-            # The pipeline reads a file, so the PDF is plaintext for the run only.
-            pdf.write_bytes(job.cipher.decrypt((d / f"input.pdf{ENC}").read_bytes()))
-            config = RunConfig(input_path=pdf, scanner=job.scanner,
-                               model=job.model, formats=EXPORTS, output_dir=d)
-            client = build_client(job.profile, job.api_key)
-            result, _ = pipeline_run(config, client=client, run_dir=d / "run",
-                                     progress=JobProgress(self.store, job))
-            job.status = "done"
-            job.records = len(result.records)
-            job.duration_s = result.duration_s
-            job.cost_usd = round(result.usage.cost_usd, 4)
-        except Exception as exc:  # any failure is the job's, not the server's
-            msg = str(exc) or exc.__class__.__name__
-            if job.api_key and job.api_key in msg:
-                msg = "The model provider rejected the request."
-            job.status, job.error = "failed", msg
-            log.warning("job %s failed: %s", job.id, msg)
-        finally:
-            pdf.unlink(missing_ok=True)
-            if (d / "run").is_dir():
-                _seal(d / "run", job.cipher)
-            job.finished_at = _now()
-            job.profile, job.api_key, job.cipher = None, None, None
-            self.store.save(job)
+        # The pipeline reads and writes files, so plaintext exists for the run
+        # only, in the OS temp dir. The data dir only ever holds ciphertext:
+        # desktop antivirus stalls a process that writes random-looking files
+        # into Documents, and on a dev machine the data dir may live there.
+        with tempfile.TemporaryDirectory(prefix="mulitaminer-job-") as tmp:
+            work = Path(tmp)
+            pdf = work / "input.pdf"
+            try:
+                pdf.write_bytes(job.cipher.decrypt((d / f"input.pdf{ENC}").read_bytes()))
+                config = RunConfig(input_path=pdf, scanner=job.scanner,
+                                   model=job.model, formats=EXPORTS, output_dir=work)
+                client = build_client(job.profile, job.api_key)
+                result, _ = pipeline_run(config, client=client, run_dir=work / "run",
+                                         progress=JobProgress(self.store, job))
+                job.status = "done"
+                job.records = len(result.records)
+                job.duration_s = result.duration_s
+                job.cost_usd = round(result.usage.cost_usd, 4)
+            except Exception as exc:  # any failure is the job's, not the server's
+                msg = str(exc) or exc.__class__.__name__
+                if job.api_key and job.api_key in msg:
+                    msg = "The model provider rejected the request."
+                job.status, job.error = "failed", msg
+                log.warning("job %s failed: %s", job.id, msg)
+            finally:
+                if (work / "run").is_dir():
+                    _seal(work / "run", job.cipher, d)   # also on failure: run.log is the evidence
+                job.finished_at = _now()
+                job.profile, job.api_key, job.cipher = None, None, None
+                self.store.save(job)
 
 
 class Cleaner:

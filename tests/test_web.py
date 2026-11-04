@@ -172,6 +172,20 @@ def test_run_dir_becomes_one_archive(client, tmp_path):
     assert sorted(p.name for p in job_dir.iterdir()) == ["input.pdf.enc", "job.json", "results.tar.enc"]
 
 
+def test_plaintext_never_written_to_data_dir(client, tmp_path, monkeypatch):
+    seen = []
+
+    def spy_run(config, client=None, run_dir=None, doc=None, progress=None):
+        seen.append((config.input_path.resolve(), run_dir.resolve()))
+        return fake_run(config, client, run_dir, doc, progress)
+    monkeypatch.setattr(jobs, "pipeline_run", spy_run)
+    token = token_of(submit(client))
+    wait_done(client, token)
+    pdf, run_dir = seen[0]
+    assert tmp_path.resolve() not in pdf.parents and tmp_path.resolve() not in run_dir.parents
+    assert not pdf.exists() and not run_dir.exists()   # the temp dir is gone with the job
+
+
 def test_jobs_run_one_at_a_time(tmp_path, monkeypatch):
     gate = threading.Event()
 

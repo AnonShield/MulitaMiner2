@@ -39,7 +39,7 @@ All optional, read at startup:
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `MULITAMINER_WEB_DATA` | `outputs/web` | Where jobs live (`<data>/jobs/<id>/`) |
+| `MULITAMINER_WEB_DATA` | `~/.mulitaminer/web` | Where jobs live (`<data>/jobs/<id>/`); only ciphertext and `job.json` are ever written there. Plaintext exists only in the OS temp dir while a job runs |
 | `MULITAMINER_WEB_MODELS` | every profile in `configs/llms` | Comma-separated profile keys offered in the form |
 | `MULITAMINER_WEB_MAX_MB` | `20` | Upload limit |
 | `MULITAMINER_WEB_RETENTION_H` | `24` | Hours a finished job (PDF, results, log) is kept |
