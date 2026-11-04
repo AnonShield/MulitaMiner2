@@ -21,6 +21,15 @@ from mulitaminer.web.jobs import (DOWNLOADS, Cleaner, JobStore, RateLimit, Worke
 
 MEDIA = {".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
          ".csv": "text/csv", ".json": "application/json", ".sarif": "application/json"}
+SECURITY_HEADERS = {
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                               "font-src https://fonts.gstatic.com; img-src 'self' data:; "
+                               "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'",
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+}
 
 HERE = Path(__file__).parent
 CUSTOM = "custom"
@@ -129,6 +138,14 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
 
     app = FastAPI(title="MulitaMiner", lifespan=lifespan, docs_url=None, redoc_url=None)
     app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        # The job link is a secret: no Referer to other sites, no framing, and
+        # scripts only from this origin (the pages inline their own).
+        resp = await call_next(request)
+        resp.headers.update(SECURITY_HEADERS)
+        return resp
     templates = Jinja2Templates(directory=HERE / "templates")
     app.state.store = store   # tests reach the store through here
 

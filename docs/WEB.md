@@ -103,8 +103,10 @@ the server cannot recover it. Because the token travels in the URL, the
 containers run uvicorn with `--no-access-log`, and the Caddy site block
 should not log requests either (the AnonShield blocks do).
 
-Measures in the code: HTTPS terminated by Caddy; `type=password` input with
-autocomplete off; the key is not part of any URL or re-rendered form;
+Measures in the code: HTTPS terminated by Caddy; security headers on every
+response (a Content-Security-Policy that allows scripts from this origin
+only, `Referrer-Policy: no-referrer` so the job link never travels to another
+site, no framing); `type=password` input with autocomplete off; the key is not part of any URL or re-rendered form;
 provider error messages that contain the key are replaced; Jinja autoescaping
 on every user-controlled string; downloads are looked up by slug, never by
 path; upload magic bytes and size checked server side; a custom `base_url`

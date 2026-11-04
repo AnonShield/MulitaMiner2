@@ -275,6 +275,14 @@ def test_pages_render(client):
     assert "Profile JSON" in client.get("/app").text
 
 
+def test_security_headers_on_every_response(client):
+    for path in ("/", "/app", "/api/health", "/static/style.css"):
+        h = client.get(path).headers
+        assert h["referrer-policy"] == "no-referrer", path
+        assert "frame-ancestors 'none'" in h["content-security-policy"], path
+        assert h["x-content-type-options"] == "nosniff", path
+
+
 def test_language_switch_and_cookie(client):
     r = client.get("/?lang=pt")
     assert "Como funciona" in r.text and r.cookies.get("lang") == "pt"
