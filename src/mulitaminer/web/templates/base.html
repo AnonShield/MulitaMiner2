@@ -68,6 +68,7 @@
       <div>
         <h4>{{ t.foot_group }}</h4>
         <a href="/#team">{{ t.team_kick }}</a>
+        <a href="https://ai-horizon-labs.github.io" target="_blank" rel="noopener">AI Horizon Labs</a>
         <a href="https://anonshield.org" target="_blank" rel="noopener">AnonShield</a>
         <a href="https://unipampa.edu.br" target="_blank" rel="noopener">UNIPAMPA</a>
       </div>
@@ -80,13 +81,31 @@ document.getElementById('theme').addEventListener('click', () => {
   root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';   // dark is the default
   try { localStorage.setItem('theme', root.dataset.theme); } catch (e) {}
 });
+// Language switch: the highlight slides to the clicked language, then the page reloads in it.
+const lang = document.querySelector('.lang'), pill = document.createElement('i');
+lang.prepend(pill);
+const place = a => { pill.style.left = a.offsetLeft + 'px'; pill.style.width = a.offsetWidth + 'px'; };
+const settle = () => {   // reposition without animating (load, resize, menu open, font swap)
+  const a = lang.querySelector('a[aria-current]'); if (!a) return;
+  pill.style.transition = 'none'; place(a); void pill.offsetWidth; pill.style.transition = '';
+};
+settle(); requestAnimationFrame(() => lang.classList.add('js'));
+if (document.fonts) document.fonts.ready.then(settle);
+window.addEventListener('resize', settle);
+lang.addEventListener('click', ev => {
+  const a = ev.target.closest('a'); if (!a || a.hasAttribute('aria-current')) return;
+  ev.preventDefault();
+  lang.querySelectorAll('a[aria-current]').forEach(x => x.removeAttribute('aria-current'));
+  a.setAttribute('aria-current', 'true'); place(a);
+  setTimeout(() => { location.href = a.href; }, 260);
+});
 const topbar = document.getElementById('top'), menuBtn = document.getElementById('menu');
-const setMenu = open => { topbar.classList.toggle('open', open); menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+const setMenu = open => { topbar.classList.toggle('open', open); menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); if (open) settle(); };
 menuBtn.addEventListener('click', () => setMenu(!topbar.classList.contains('open')));
 document.addEventListener('click', ev => {   // tap outside the panel closes it
   if (topbar.classList.contains('open') && !ev.target.closest('#nav') && !ev.target.closest('#menu')) setMenu(false);
 });
-document.getElementById('nav').addEventListener('click', ev => { if (ev.target.closest('a')) setMenu(false); });
+document.getElementById('nav').addEventListener('click', ev => { if (ev.target.closest('a') && !ev.target.closest('.lang')) setMenu(false); });
 </script>
 {% block scripts %}{% endblock %}
 </body>

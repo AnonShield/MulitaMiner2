@@ -53,9 +53,11 @@ section.block>.wrap>h2{margin-top:.5rem}
 .top nav a:hover{color:var(--text);background:var(--elevated)}
 .top nav a.cta{background:var(--btn);color:#fff;margin-left:.5rem}
 .top nav a.cta:hover{background:var(--btn-h)}
-.lang{display:inline-flex;border:1px solid var(--border2);border-radius:999px;padding:2px;margin-left:.6rem}
-.top nav .lang a{font:600 .68rem var(--mono);padding:.3rem .5rem;border-radius:999px;color:var(--muted)}
-.top nav .lang a[aria-current]{background:var(--elevated);color:var(--amber)}
+.lang{display:inline-flex;position:relative;border:1px solid var(--border2);border-radius:999px;padding:2px;margin-left:.6rem}
+.top nav .lang a{position:relative;z-index:1;font:600 .68rem var(--mono);padding:.3rem .5rem;border-radius:999px;color:var(--muted);transition:color .26s}
+.top nav .lang a[aria-current]{color:var(--amber)}
+.lang:not(.js) a[aria-current]{background:var(--elevated)}
+.lang i{position:absolute;top:2px;bottom:2px;left:0;width:0;border-radius:999px;background:var(--elevated);transition:left .26s cubic-bezier(.4,0,.2,1),width .26s cubic-bezier(.4,0,.2,1)}
 .menu{display:none;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:var(--r-sm);width:38px;height:34px;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .menu .i2{display:none}
 .top.open .menu .i1{display:none}
@@ -387,10 +389,10 @@ main,footer{position:relative;z-index:1}
 .doc p b{color:var(--text);font-weight:600}
 .demo pre.json{min-height:300px}
 
-/* eye toggle on the key field */
+/* eye toggle on the key field: the icon shows the state (crossed = hidden) */
 .keyrow .btn svg{display:block}
-.keyrow .btn .eye-off{display:none}
-.keyrow .btn.shown .eye{display:none}
-.keyrow .btn.shown .eye-off{display:block}
+.keyrow .btn .eye{display:none}
+.keyrow .btn.shown .eye{display:block}
+.keyrow .btn.shown .eye-off{display:none}
 
 @media (max-width:720px){input[type=password],input[type=text],select,textarea{font-size:16px}}
