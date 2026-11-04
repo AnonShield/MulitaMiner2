@@ -13,35 +13,34 @@
     </div>
 
     <div class="demo">
-      <div class="pane">
+      <div class="pane doc">
         <div class="ph">{{ t.demo_in }}</div>
-<pre><span class="h">High (CVSS: 7.5)
-NVT: SMTP too long line</span>
-Summary
-Some antivirus scanners dies when they process an email with a
-too long string without line breaks. Such a message was sent.
-If there is an antivirus on your MTA, it might have crashed.
-Vulnerability Detection Result
-Vulnerability was detected according to the Vulnerability
-Detection Method.
-Solution
-Solution type: VendorFix
-Contact the vendor of the antivirus scanner to get an update.
-Vulnerability Detection Method
-Details: SMTP too long line
-OID:1.3.6.1.4.1.25623.1.0.11270</pre>
+        <div class="docbody">
+          <span class="sev">High (CVSS: 7.5)</span>
+          <h4>NVT: SMTP too long line</h4>
+          <h5>Summary</h5>
+          <p>Some antivirus scanners dies when they process an email with a too long string without line breaks. Such a message was sent. If there is an antivirus on your MTA, it might have crashed. Please check its status right now, as it is not possible to do it remotely.</p>
+          <h5>Vulnerability Detection Result</h5>
+          <p>Vulnerability was detected according to the Vulnerability Detection Method.</p>
+          <h5>Solution</h5>
+          <p><b>Solution type:</b> VendorFix<br>Contact the vendor of the antivirus scanner to get an update.</p>
+          <h5>Vulnerability Detection Method</h5>
+          <p>Details: SMTP too long line<br>OID: 1.3.6.1.4.1.25623.1.0.11270</p>
+        </div>
       </div>
       <div class="link" aria-hidden="true">
         <svg viewBox="0 0 96 120" width="96" height="120" overflow="visible">
-          <path class="dots" d="M4 60 H84" stroke-width="2" fill="none" stroke-dasharray="5 9" stroke-linecap="round"/>
+          <g class="flow">
+            <path class="dots" d="M4 60 H84" stroke-width="2" fill="none" stroke-dasharray="5 9" stroke-linecap="round"/>
+            <path class="head" d="M80 52 L91 60 L80 68 Z" stroke-linejoin="round"/>
+          </g>
           <circle class="node" cx="48" cy="60" r="20" stroke-width="1.5"/>
           <text class="lbl" x="48" y="64" text-anchor="middle" font-size="11" font-weight="600" font-family="JetBrains Mono, monospace">LLM</text>
-          <path class="head" d="M80 52 L91 60 L80 68 Z" stroke-linejoin="round"/>
         </svg>
       </div>
       <div class="pane">
         <div class="ph">{{ t.demo_out }}</div>
-<pre>{
+<pre class="json">{
   <span class="k">"Name"</span>: <span class="s">"SMTP too long line"</span>,
   <span class="k">"severity"</span>: <span class="s">"HIGH"</span>,
   <span class="k">"cvss"</span>: <span class="n">7.5</span>,
@@ -216,10 +215,10 @@ OID:1.3.6.1.4.1.25623.1.0.11270</pre>
     <div class="kick">{{ t.sis_kick }}</div>
     <h2>{{ t.sis_h2 }}</h2>
     <div class="sister">
-      <div class="card"><h3>AnonShield</h3><p>{{ t.sis_anon_p }}</p>
-        <a class="btn btn-ghost" href="https://anonshield.org" target="_blank" rel="noopener">anonshield.org ↗</a></div>
       <div class="card"><h3>{{ t.sis_local }}</h3><p>{{ t.sis_local_p }}</p>
         <a class="btn btn-ghost" href="https://github.com/INARI18/MulitaMiner2/blob/main/docs/WEB.md" target="_blank" rel="noopener">{{ t.sis_local_btn }} ↗</a></div>
+      <div class="card"><h3>AnonShield</h3><p>{{ t.sis_anon_p }}</p>
+        <a class="btn btn-ghost" href="https://anonshield.org" target="_blank" rel="noopener">anonshield.org ↗</a></div>
     </div>
   </div>
 </section>
@@ -239,20 +238,27 @@ OID:1.3.6.1.4.1.25623.1.0.11270</pre>
 {% block scripts %}
 <script>
 (function () {
-  // The extracted record "types itself" once: lines appear one by one with a cursor.
-  const out = document.querySelector('.demo .pane:last-child pre');
+  // The extracted record types itself once, keeping the syntax colours.
+  const out = document.querySelector('.demo pre.json');
   if (out) {
-    const lines = out.innerHTML.split('\n');
-    out.innerHTML = lines.map(l => '<span class="ln">' + l + '</span>').join('\n');
-    out.classList.add('typing');
-    const spans = [...out.querySelectorAll('.ln')];
-    const cur = document.createElement('span'); cur.className = 'cur'; out.appendChild(cur);
-    let i = 0;
-    const step = () => {
-      if (i < spans.length) { spans[i++].classList.add('on'); setTimeout(step, 90); }
-      else { cur.remove(); out.classList.remove('typing'); }
+    const chunks = [...out.childNodes].map(n => ({c: n.nodeType === 3 ? null : n.className, t: n.textContent}));
+    const total = chunks.reduce((a, ch) => a + ch.t.length, 0);
+    const esc = x => x.replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+    const render = n => {
+      let html = '', left = n;
+      for (const ch of chunks) {
+        if (left <= 0) break;
+        const part = esc(ch.t.slice(0, left)); left -= ch.t.length;
+        html += ch.c ? '<span class="' + ch.c + '">' + part + '</span>' : part;
+      }
+      out.innerHTML = html + '<span class="cur"></span>';
     };
-    setTimeout(step, 500);
+    let n = 0;
+    const tick = () => {
+      n = Math.min(total, n + 2); render(n);
+      if (n < total) setTimeout(tick, 26); else setTimeout(() => { const c = out.querySelector('.cur'); if (c) c.remove(); }, 1500);
+    };
+    render(0); setTimeout(tick, 400);
   }
 
   const stages = document.getElementById('stages');
