@@ -35,6 +35,21 @@ docker compose -f docker-compose.yml -f docker-compose.web.yml up web
 Same address. The v4 model appears in the model list as `mulita-qwen2.5-1.5b-v4`
 (local, no key). Without a GPU it runs on the CPU and is slow.
 
+## Without cloning: the published image
+
+GitHub Actions publishes the image to the GitHub Container Registry on every
+push to `main` ([.github/workflows/docker-image.yml](../.github/workflows/docker-image.yml)),
+so a user needs Docker and nothing else:
+
+```bash
+docker run -d --name mulita-web -p 127.0.0.1:8000:8000 -v mulita-web:/data ghcr.io/inari18/mulitaminer2:web
+```
+
+That is the cloud-models setup (the key goes in the form). For the
+fine-tuned local model the Ollama service is needed too, which is what
+`docker-compose.web.yml` wires up; that one does need the repo, or at least
+the two compose files.
+
 ## Settings
 
 All optional, read at startup:
