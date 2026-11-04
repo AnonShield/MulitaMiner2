@@ -119,7 +119,7 @@ Caddyfile block (the body limit must cover the upload limit; Caddy's default
 for the other sites is 1 MB):
 
 ```
-mulitaminer.anonshield.org {
+mulita.anonshield.org {
     request_body {
         max_size 20MB
     }

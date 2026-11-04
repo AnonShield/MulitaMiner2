@@ -2,7 +2,7 @@
 
 A browser front end for `mulitaminer extract`: upload a scanner PDF, pick the
 scanner and the model, get the spreadsheet back. One container, served behind
-the AnonShield Caddy as `mulitaminer.anonshield.org`.
+the AnonShield Caddy as `mulita.anonshield.org`.
 
 ## Goals
 
@@ -171,7 +171,7 @@ Local testing); the spec does not fix colors or layout.
 - `docs/WEB.md`: how to run both, and the Caddyfile block for Cristhian:
 
 ```
-mulitaminer.anonshield.org {
+mulita.anonshield.org {
     request_body {
         max_size 20MB
     }
