@@ -148,6 +148,9 @@ class LLMClient:
             max_retries=settings.SDK_MAX_RETRIES,
             timeout=profile.request_timeout_s,
         )
+        if profile.is_local and profile.base_url:
+            _warn_if_ollama_context_too_small(
+                profile.base_url.rsplit("/v1", 1)[0], self.model, profile.context_window)
 
     def extract(
         self, system_prompt: str, user_content: str, response_model: type[BaseModel],
@@ -179,8 +182,11 @@ class LLMClient:
         if self.profile.reasoning_effort:
             extra_body["reasoning_effort"] = self.profile.reasoning_effort
         if self.profile.is_local:
-            # Ollama truncates to num_ctx (default 4096); set it per request so a
-            # chunk that outgrows the default is not silently cut.
+            # Ollama's native API honours a per-request num_ctx; its
+            # OpenAI-compatible endpoint, the one used here, ignores it (verified
+            # on 0.34.0, which then truncates silently to half the default 4096,
+            # and on 0.40.14, which rejects the request). Sent anyway for servers
+            # that do honour it; the real guard is the startup check in __init__.
             extra_body["options"] = {"num_ctx": self.profile.context_window}
 
         try:
@@ -204,6 +210,13 @@ class LLMClient:
                 raise FatalLLMError(
                     f"Fatal provider error for '{self.profile.key}' "
                     f"(HTTP {exc.status_code}): {exc}"
+                ) from exc
+            if exc.status_code == 400 and "context size" in str(exc):
+                raise FatalLLMError(
+                    f"The server's context for '{self.model}' is smaller than this chunk: {exc}. "
+                    "Ollama ignores the per-request num_ctx on its OpenAI-compatible endpoint; "
+                    "start it with OLLAMA_CONTEXT_LENGTH=16384 or bake `PARAMETER num_ctx` "
+                    "into the model (docs/TROUBLESHOOTING.md)."
                 ) from exc
             raise
 
@@ -292,6 +305,39 @@ def _provider_counters(usage) -> dict:
         return out
 
     return numbers(data)
+
+
+def ollama_num_ctx(show: dict) -> int | None:
+    """The num_ctx baked into a model, from Ollama's /api/show payload."""
+    m = re.search(r"^num_ctx\s+(\d+)", show.get("parameters") or "", re.MULTILINE)
+    return int(m.group(1)) if m else None
+
+
+def _warn_if_ollama_context_too_small(root: str, model: str, needed: int) -> None:
+    """Ollama serves a model with the num_ctx baked into it, or the server
+    default (4096 unless OLLAMA_CONTEXT_LENGTH); the per-request value is
+    ignored on the OpenAI-compatible endpoint. Warn before the first chunk is
+    cut or rejected. Best effort: a non-Ollama server simply does not answer."""
+    try:
+        with httpx.Client(timeout=5.0) as http:
+            show = http.post(f"{root}/api/show", json={"model": model})
+            if show.status_code != 200:
+                return
+            baked = ollama_num_ctx(show.json())
+    except Exception as exc:  # noqa: BLE001 - a probe never fails a run
+        log.debug("context probe failed for %s: %s", root, exc)
+        return
+    if baked is None:
+        log.warning(
+            "Ollama model '%s' has no num_ctx of its own: the server default applies "
+            "(4096 unless OLLAMA_CONTEXT_LENGTH is set), below this profile's %d. Chunks "
+            "above it are rejected or silently truncated; see docs/TROUBLESHOOTING.md.",
+            model, needed)
+    elif baked < needed:
+        log.warning(
+            "Ollama model '%s' is baked with num_ctx %d, below this profile's %d; chunks "
+            "above it are rejected or silently truncated. See docs/TROUBLESHOOTING.md.",
+            model, baked, needed)
 
 
 def _probe_ollama(root: str) -> dict:

@@ -245,3 +245,30 @@ def test_usage_is_charged_once_per_call_not_twice():
     client.extract("sys", "user", Items, usage)
     client.extract("sys", "user", Items, usage)
     assert usage.calls == 2 and usage.prompt_tokens == 200
+
+
+def test_ollama_num_ctx_is_read_from_the_show_payload():
+    from mulitaminer.llm import ollama_num_ctx
+
+    assert ollama_num_ctx({"parameters": "num_gpu 0\nnum_ctx                        16384\n"}) == 16384
+    assert ollama_num_ctx({"parameters": ""}) is None
+    assert ollama_num_ctx({}) is None
+
+
+def test_context_size_rejection_is_fatal_with_the_fix_named():
+    import httpx
+    from openai import BadRequestError
+
+    class RejectingTransport:
+        class chat:
+            class completions:
+                @staticmethod
+                def create(**kwargs):
+                    raise BadRequestError(
+                        "request (5048 tokens) exceeds the available context size (4096 tokens)",
+                        response=httpx.Response(400, request=httpx.Request("POST", "http://x/v1")),
+                        body=None)
+
+    client = LLMClient(MODELS["deepseek"], transport=RejectingTransport())
+    with pytest.raises(FatalLLMError, match="OLLAMA_CONTEXT_LENGTH"):
+        client.extract("sys", "user", Items)
