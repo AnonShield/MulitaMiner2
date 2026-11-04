@@ -52,6 +52,15 @@ SCANNERS = {
     "acunetix": ("Acunetix 360", "Acunetix 360 / Invicti scan report"),
     "zap": ("OWASP ZAP", "ZAP traditional report, printed to PDF"),
 }
+# Union of the authors of the four MulitaMiner papers, in author order.
+TEAM = [
+    ("Beatriz Machado", "UNIPAMPA"),
+    ("Douglas Lautert", "UNIPAMPA"),
+    ("Cristhian Kapelinski", "UNIPAMPA"),
+    ("Diego Kreutz", "UNIPAMPA · advisor"),
+    ("Isadora Garcia Ferrão", "Université de Bretagne Occidentale"),
+    ("Alessandro Bof", "UNIPAMPA"),
+]
 # Strings the page scripts need (file checks, model switch, job polling).
 JS_KEYS = ("err_not_pdf", "err_too_big", "f_custom_id", "f_modelid", "f_served_local",
            "f_key_local", "f_key_custom", "f_key_req", "f_key_hint", "f_get_key", "show",
@@ -142,6 +151,8 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         return render(request, "index.html", {
             "scanner_labels": [scanner_view(s)["label"] for s in sorted(all_scanners())],
             "model_labels": [MODEL_LABELS.get(m, m) for m in models],
+            "team": [{"name": n, "affiliation": a,
+                      "initials": "".join(w[0] for w in n.split()[:2])} for n, a in TEAM],
         })
 
     @app.get("/app")
