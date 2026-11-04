@@ -1,8 +1,10 @@
 """FastAPI app: landing page, upload form, job page, downloads (docs/WEB.md)."""
 from __future__ import annotations
 
+import io
 import json
 import os
+import zipfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -70,7 +72,7 @@ JS_KEYS = ("err_not_pdf", "err_too_big", "f_custom_id", "f_modelid", "f_served_l
            "f_key_local", "f_key_custom", "f_key_req", "f_key_hint", "f_get_key", "show",
            "hide", "f_uploading", "st_queued", "st_running", "st_done", "st_failed", "q_pos",
            "q_next", "starting", "findings", "stage_reading", "stage_segmenting",
-           "stage_extracting", "recent_forget", "recent_open", "recent_none")
+           "stage_extracting", "recent_forget", "recent_open", "recent_none", "f_drop_many")
 
 
 def _env_models() -> list[str]:
@@ -101,6 +103,8 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
     retention_h = retention_h or float(os.getenv("MULITAMINER_WEB_RETENTION_H", "24"))
     # Pending jobs (queued + running) accepted before the form answers "busy".
     max_queue = max_queue or int(os.getenv("MULITAMINER_WEB_MAX_QUEUE", "20"))
+    # PDFs accepted in one submission (one job each, one queue slot each).
+    max_batch = int(os.getenv("MULITAMINER_WEB_MAX_BATCH", "10"))
     # Custom base_url may reach localhost / the Docker network only when the
     # user runs the app themselves (docker-compose.web.yml sets it).
     if allow_private is None:
@@ -170,9 +174,11 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         return render(request, "app.html", form_context())
 
     @app.post("/jobs")
-    async def submit(request: Request, report: UploadFile = File(...),
+    async def submit(request: Request, report: list[UploadFile] = File(...),
                      scanner: str = Form(...), model: str = Form(...),
                      api_key: str = Form(""), profile_json: str = Form("")):
+        """One job per uploaded PDF; several PDFs (same scanner, model and key)
+        land on a batch page with a zip download."""
         t = strings(lang_of(request))
         api_key = api_key.strip() or None
         values = dict(scanner=scanner, model=model, profile_json=profile_json)
@@ -180,17 +186,22 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         def bad(msg: str):
             return render(request, "app.html", form_context(error=msg, **values), status_code=400)
 
-        if store.pending() >= max_queue:
+        if len(report) > max_batch:
+            return bad(t["e_batch"].format(n=max_batch))
+        if store.pending() + len(report) > max_queue:
             return render(request, "app.html", form_context(error=t["e_busy"], **values),
                           status_code=503)
         if not rate.allow(request.client.host if request.client else "?"):
             return render(request, "app.html", form_context(error=t["e_rate"], **values),
                           status_code=429)
-        pdf = await report.read(max_bytes + 1)
-        if len(pdf) > max_bytes:
-            return bad(t["e_too_big"].format(mb=max_bytes // (1024 * 1024)))
-        if not pdf.startswith(b"%PDF"):
-            return bad(t["e_not_pdf"])
+        pdfs = []
+        for upload in report:
+            pdf = await upload.read(max_bytes + 1)
+            if len(pdf) > max_bytes:
+                return bad(t["e_too_big"].format(mb=max_bytes // (1024 * 1024)))
+            if not pdf.startswith(b"%PDF"):
+                return bad(t["e_not_pdf"])
+            pdfs.append((pdf, upload.filename or "report.pdf"))
         if scanner not in all_scanners():
             return bad(t["e_scanner"].format(s=scanner))
 
@@ -212,10 +223,51 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         else:
             return bad(t["e_model"].format(m=model))
 
-        job, token = store.create(pdf, scanner, model, profile, api_key, profile_json=cfg,
-                                  filename=report.filename or "report.pdf")
-        worker.submit(job)
-        return RedirectResponse(f"/jobs/{token}", status_code=303)
+        tokens = []
+        for pdf, filename in pdfs:
+            job, token = store.create(pdf, scanner, model, profile, api_key, profile_json=cfg,
+                                      filename=filename)
+            worker.submit(job)
+            tokens.append(token)
+        if len(tokens) == 1:
+            return RedirectResponse(f"/jobs/{tokens[0]}", status_code=303)
+        return RedirectResponse(f"/batch/{'.'.join(tokens)}", status_code=303)
+
+    def batch_jobs(tokens: str) -> list[tuple[str, object]]:
+        """The jobs of a batch link, in order; a token the server no longer
+        knows is skipped rather than failing the whole page."""
+        found = []
+        for token in tokens.split("."):
+            job = store.get(job_id(token))
+            if job is not None:
+                found.append((token, job))
+        if not found:
+            raise HTTPException(404, "No such batch.")
+        return found
+
+    @app.get("/batch/{tokens}")
+    def batch_page(request: Request, tokens: str):
+        jobs = [{"token": tok, **status_payload(job, tok)} for tok, job in batch_jobs(tokens)]
+        return render(request, "batch.html", {"jobs": jobs, "tokens": tokens, "downloads": DOWNLOADS})
+
+    @app.get("/batch/{tokens}/download/{fmt}")
+    def batch_download(tokens: str, fmt: str):
+        if fmt not in DOWNLOADS:
+            raise HTTPException(404, "Unknown format.")
+        filename, _label = DOWNLOADS[fmt]
+        suffix = filename.split("results", 1)[1]
+        buf = io.BytesIO()
+        n = 0
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for tok, job in batch_jobs(tokens):
+                data = store.read_result(job, fernet(tok), filename)
+                if data is not None:
+                    zf.writestr(f"{job.scanner}-{store.read_name(job, fernet(tok))}{suffix}", data)
+                    n += 1
+        if n == 0:
+            raise HTTPException(404, "Nothing finished yet.")
+        return Response(buf.getvalue(), media_type="application/zip",
+                        headers={"Content-Disposition": f'attachment; filename="mulitaminer-{fmt}-{n}.zip"'})
 
     def job_or_404(token: str):
         """The link's token names the job (by hash) and decrypts its files."""

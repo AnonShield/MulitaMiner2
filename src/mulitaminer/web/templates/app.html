@@ -17,14 +17,14 @@
       <div class="fs">
         <div class="ft"><span class="n">1</span><h3>{{ t.f_report }}</h3></div>
         <div class="drop" id="drop">
-          <input type="file" id="report" name="report" accept="application/pdf,.pdf" required>
+          <input type="file" id="report" name="report" accept="application/pdf,.pdf" multiple required>
           <div class="drop-idle">
             <strong>{{ t.f_drop }}</strong> {{ t.f_or }} <span class="link">{{ t.f_browse }}</span>
             <small>{{ t.f_drop_sub.format(mb=max_mb) }}</small>
           </div>
           <div class="drop-file" hidden><span class="fname"></span><span class="fsize"></span></div>
         </div>
-        <p class="hint">{{ t.f_pdf_only }}</p>
+        <p class="hint">{{ t.f_pdf_only }} {{ t.f_batch_hint }}</p>
         <p class="alert" id="file-err" hidden style="margin:.6rem 0 0"></p>
       </div>
 
@@ -140,18 +140,23 @@
   const ferr = document.getElementById('file-err');
   const maxMb = {{ max_mb }};
   const show = () => {
-    let f = input.files[0];
+    const files = [...input.files];
     ferr.hidden = true;
-    if (f && !/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') {
-      ferr.textContent = T.err_not_pdf.replace('{f}', f.name); ferr.hidden = false; input.value = ''; f = null;
-    } else if (f && f.size > maxMb * 1048576) {
-      ferr.textContent = T.err_too_big.replace('{f}', f.name).replace('{s}', (f.size / 1048576).toFixed(1)).replace('{mb}', maxMb);
-      ferr.hidden = false; input.value = ''; f = null;
+    const badName = files.find(f => !/\.pdf$/i.test(f.name) && f.type !== 'application/pdf');
+    const badSize = files.find(f => f.size > maxMb * 1048576);
+    if (badName) {
+      ferr.textContent = T.err_not_pdf.replace('{f}', badName.name); ferr.hidden = false; input.value = ''; files.length = 0;
+    } else if (badSize) {
+      ferr.textContent = T.err_too_big.replace('{f}', badSize.name).replace('{s}', (badSize.size / 1048576).toFixed(1)).replace('{mb}', maxMb);
+      ferr.hidden = false; input.value = ''; files.length = 0;
     }
-    picked.hidden = !f; idle.hidden = !!f;
-    if (f) {
-      picked.querySelector('.fname').textContent = f.name;
-      picked.querySelector('.fsize').textContent = (f.size / 1048576).toFixed(1) + ' MB';
+    picked.hidden = !files.length; idle.hidden = !!files.length;
+    if (files.length === 1) {
+      picked.querySelector('.fname').textContent = files[0].name;
+      picked.querySelector('.fsize').textContent = (files[0].size / 1048576).toFixed(1) + ' MB';
+    } else if (files.length) {
+      picked.querySelector('.fname').textContent = T.f_drop_many.replace('{n}', files.length);
+      picked.querySelector('.fsize').textContent = files.map(f => f.name).join(' · ');
     }
   };
   input.addEventListener('change', show);

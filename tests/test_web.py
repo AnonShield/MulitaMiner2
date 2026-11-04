@@ -235,6 +235,41 @@ def test_rate_limit_per_address(tmp_path, monkeypatch):
         assert r.status_code == 429 and "Too many submissions" in r.text
 
 
+def test_batch_creates_one_job_per_pdf_and_zips_them(client, tmp_path):
+    import io
+    import zipfile
+    files = [("report", (f"scan-{i}.pdf", PDF, "application/pdf")) for i in range(3)]
+    r = client.post("/jobs", data={"scanner": "openvas", "model": "deepseek", "api_key": KEY},
+                    files=files, follow_redirects=False)
+    assert r.status_code == 303 and "/batch/" in r.headers["location"]
+    tokens = r.headers["location"].rsplit("/", 1)[1]
+    assert len(tokens.split(".")) == 3
+    for token in tokens.split("."):
+        assert wait_done(client, token)["status"] == "done"
+    page = client.get(f"/batch/{tokens}")
+    assert page.status_code == 200 and "scan-2" in page.text
+    r = client.get(f"/batch/{tokens}/download/xlsx")
+    assert r.status_code == 200 and r.headers["content-type"] == "application/zip"
+    names = sorted(zipfile.ZipFile(io.BytesIO(r.content)).namelist())
+    assert names == ["openvas-scan-0.xlsx", "openvas-scan-1.xlsx", "openvas-scan-2.xlsx"]
+    assert client.get("/batch/nope.nope").status_code == 404
+
+
+def test_batch_counts_against_the_queue_once_per_pdf(tmp_path, monkeypatch):
+    gate = threading.Event()
+
+    def slow_run(config, client=None, run_dir=None, doc=None, progress=None):
+        gate.wait(5)
+        return fake_run(config, client, run_dir, doc, progress)
+    monkeypatch.setattr(jobs, "pipeline_run", slow_run)
+    with TestClient(create_app(data_dir=tmp_path, models=["deepseek"], max_queue=2, rate_per_hour=1000)) as c:
+        files = [("report", (f"s{i}.pdf", PDF, "application/pdf")) for i in range(3)]
+        r = c.post("/jobs", data={"scanner": "openvas", "model": "deepseek", "api_key": KEY},
+                   files=files, follow_redirects=False)
+        assert r.status_code == 503
+        gate.set()
+
+
 def test_pages_render(client):
     assert "Research" in client.get("/").text
     assert "Profile JSON" in client.get("/app").text

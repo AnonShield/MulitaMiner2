@@ -305,3 +305,12 @@ input:read-only{color:var(--muted);background:var(--raised);cursor:not-allowed}
 .jobsteps li{margin:.25rem 0}
 .jobsteps li b{color:var(--text);font-weight:600}
 .jobsteps li.cur b{color:var(--accent)}
+
+/* batch page */
+.blist{list-style:none;margin:1rem 0 0;padding:0;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
+.blist li{display:flex;align-items:center;gap:.7rem;padding:.6rem .9rem;border-top:1px solid var(--border);font-size:.9rem}
+.blist li:first-child{border-top:0}
+.blist li a{flex:1;min-width:0;text-decoration:none;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blist li a:hover{color:var(--accent-h)}
+.blist .st{font:.72rem var(--mono);color:var(--text2);text-transform:capitalize}
+.blist .cnt{font:.72rem var(--mono);color:var(--muted);min-width:4.5em;text-align:right}

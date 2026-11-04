@@ -5,9 +5,12 @@ scanner and the model, download the results. Jobs run in the background one
 at a time; the job page is a link you can close and come back to.
 
 Pages: `/` (what the tool is, how it works, the papers), `/app` (the form,
-with a guide explaining every field, including the custom-profile JSON) and
-`/jobs/<id>` (status, then downloads). Every exporter runs at the end of a
-job, so the job page offers XLSX, CSV, JSON, SARIF, CSAF, DefectDojo and CAIS.
+with a guide explaining every field, including the custom-profile JSON),
+`/jobs/<token>` (status, live log, then downloads) and `/batch/<tokens>`
+(several PDFs submitted together: one job each, a zip per format of the
+finished ones). Every exporter runs at the end of a job, so the job page
+offers XLSX, CSV, JSON, SARIF, CSAF, DefectDojo and CAIS. The browser keeps
+its own list of the jobs it opened (localStorage) and shows it on `/app`.
 
 Design and rationale: [specs/2026-11-03-web-interface-design.md](specs/2026-11-03-web-interface-design.md).
 
@@ -61,6 +64,7 @@ All optional, read at startup:
 | `MULITAMINER_WEB_MAX_MB` | `20` | Upload limit |
 | `MULITAMINER_WEB_RETENTION_H` | `24` | Hours a finished job (PDF, results, log) is kept |
 | `MULITAMINER_WEB_MAX_QUEUE` | `20` | Pending jobs accepted before the form answers "queue is full" (HTTP 503) |
+| `MULITAMINER_WEB_MAX_BATCH` | `10` | PDFs accepted in one submission; each becomes a job and a queue slot |
 | `MULITAMINER_WEB_RATE_PER_HOUR` | `10` | Submissions per client address per hour before HTTP 429 |
 | `MULITAMINER_WEB_ALLOW_PRIVATE_URLS` | unset | `1` lets a custom profile point at localhost or a private network (your own machine only; on the public site it is an SSRF vector) |
 | `MULITAMINER2_LLMS_DIR` | unset | Extra profiles, as for the CLI ([ADDING_A_MODEL.md](ADDING_A_MODEL.md)) |

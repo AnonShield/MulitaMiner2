@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}MulitaMiner · {{ t.b_title }}{% endblock %}
+{% block nav %}
+<a href="/">{{ t.nav_home }}</a>
+{% endblock %}
+{% block cta %}<a class="cta" href="/app">{{ t.nav_new }}</a>{% endblock %}
+{% block content %}
+<div class="jobwrap">
+<section class="card job" id="batch" data-tokens="{{ tokens }}">
+  <div class="jobhead">
+    <div>
+      <div class="kick">{{ t.b_kick }} · {{ jobs[0].scanner }} · {{ jobs[0].model_label }}</div>
+      <h1 class="status"><span><span id="b-done">0</span> / {{ jobs | length }} {{ t.b_done }}</span></h1>
+    </div>
+    <div class="meta"><span>{{ t.updated }} <b id="updated">{{ jobs[0].updated_at[11:19] }}</b> UTC</span></div>
+  </div>
+  <p class="hint">{{ t.b_hint.format(h=retention_h) }}</p>
+
+  <ul class="blist" id="blist">
+    {% for j in jobs %}
+    <li data-token="{{ j.token }}">
+      <i class="dot {{ j.status }}"></i>
+      <a href="/jobs/{{ j.token }}"><b>{{ j.name }}</b></a>
+      <span class="st">{{ t['st_' + j.status] }}</span>
+      <span class="cnt">{% if j.total_blocks %}{{ j.done_blocks }} / {{ j.total_blocks }}{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <p class="lb" style="margin-top:1.3rem">{{ t.b_zip }}</p>
+  <div class="actions">
+    {% for slug in ('xlsx', 'csv', 'json') %}
+    <a class="btn btn-primary bdl" href="/batch/{{ tokens }}/download/{{ slug }}">ZIP · {{ slug | upper }}</a>
+    {% endfor %}
+    <a class="btn btn-ghost" href="/app">{{ t.j_another }}</a>
+  </div>
+  <div class="chips" style="margin-top:.7rem">
+    {% for slug, (file, label) in downloads.items() if slug not in ('xlsx', 'csv', 'json') %}
+    <a class="chip bdl" href="/batch/{{ tokens }}/download/{{ slug }}">ZIP · {{ label }} ↓</a>
+    {% endfor %}
+  </div>
+  <p class="hint">{{ t.b_zip_hint }}</p>
+</section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const T = {{ tjs | tojson }};
+  const items = [...document.querySelectorAll('#blist li')];
+  const $ = id => document.getElementById(id);
+  // Remember each job in the browser, like the job page does.
+  try {
+    const key = 'mulita.jobs', list = JSON.parse(localStorage.getItem(key) || '[]');
+    const mine = {{ jobs | tojson }};
+    const fresh = mine.map(j => ({token: j.token, name: j.name, scanner: j.scanner, model: j.model_label, created: j.created_at}));
+    const rest = list.filter(j => !fresh.some(f => f.token === j.token));
+    localStorage.setItem(key, JSON.stringify(fresh.concat(rest).slice(0, 50)));
+  } catch (e) {}
+  const tick = async () => {
+    let done = 0, pending = 0;
+    for (const li of items) {
+      let j;
+      try { j = await (await fetch('/api/jobs/' + li.dataset.token, {cache: 'no-store'})).json(); } catch (e) { continue; }
+      li.querySelector('.dot').className = 'dot ' + j.status;
+      li.querySelector('.st').textContent = T['st_' + j.status] || j.status;
+      li.querySelector('.cnt').textContent = j.total_blocks ? j.done_blocks + ' / ' + j.total_blocks : '';
+      if (j.status === 'done') done++;
+      if (j.status === 'queued' || j.status === 'running') pending++;
+      $('updated').textContent = (j.updated_at || '').slice(11, 19);
+    }
+    $('b-done').textContent = done;
+    document.title = 'MulitaMiner · ' + done + '/' + items.length;
+    if (pending) setTimeout(tick, 5000);
+  };
+  tick();
+})();
+</script>
+{% endblock %}
