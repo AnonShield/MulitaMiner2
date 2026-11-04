@@ -6,7 +6,7 @@
 {% block cta %}<a class="cta" href="/app">{{ t.nav_new }}</a>{% endblock %}
 {% block content %}
 <div class="jobwrap">
-<section class="card job" id="job" data-id="{{ job.id }}" data-status="{{ job.status }}">
+<section class="card job" id="job" data-id="{{ token }}" data-status="{{ job.status }}">
   <div class="jobhead">
     <div>
       <div class="kick">{{ t.job }} {{ job.id[:8] }} · {{ job.scanner }} · {{ job.model_label }}</div>
@@ -37,14 +37,14 @@
       <div class="tile"><div class="v">{{ '$%.4f' % job.cost_usd if job.cost_usd else '0' }}</div><div class="l">{{ t.t_cost }}</div></div>
     </div>
     <div class="actions">
-      <a class="btn btn-primary" href="/jobs/{{ job.id }}/download/xlsx">{{ t.dl }} XLSX</a>
-      <a class="btn btn-primary" href="/jobs/{{ job.id }}/download/csv">{{ t.dl }} CSV</a>
+      <a class="btn btn-primary" href="/jobs/{{ token }}/download/xlsx">{{ t.dl }} XLSX</a>
+      <a class="btn btn-primary" href="/jobs/{{ token }}/download/csv">{{ t.dl }} CSV</a>
       <a class="btn btn-ghost" href="/app">{{ t.j_another }}</a>
     </div>
     <p class="lb" style="margin-top:1.3rem">{{ t.j_also }}</p>
     <div class="chips">
       {% for slug, (file, label) in downloads.items() if slug not in ('xlsx', 'csv') %}
-      <a class="chip" href="/jobs/{{ job.id }}/download/{{ slug }}" style="text-decoration:none">{{ label }} ↓</a>
+      <a class="chip" href="/jobs/{{ token }}/download/{{ slug }}" style="text-decoration:none">{{ label }} ↓</a>
       {% endfor %}
     </div>
     <p class="hint">{{ t.j_also_p }}</p>

@@ -7,14 +7,18 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from mulitaminer.llm import ModelProfile, all_models
 from mulitaminer.scanner_engine import all_scanners
 from mulitaminer.web.i18n import LANGS, pick_lang, strings
-from mulitaminer.web.jobs import DOWNLOADS, Cleaner, JobStore, Worker, custom_profile
+from mulitaminer.web.jobs import (DOWNLOADS, Cleaner, JobStore, RateLimit, Worker, custom_profile,
+                                  fernet, job_id)
+
+MEDIA = {".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+         ".csv": "text/csv", ".json": "application/json", ".sarif": "application/json"}
 
 HERE = Path(__file__).parent
 CUSTOM = "custom"
@@ -57,7 +61,7 @@ TEAM = [
     ("Beatriz Machado", "UNIPAMPA"),
     ("Douglas Lautert", "UNIPAMPA"),
     ("Cristhian Kapelinski", "UNIPAMPA"),
-    ("Diego Kreutz", "UNIPAMPA · advisor"),
+    ("Diego Kreutz", "UNIPAMPA"),
     ("Isadora Garcia Ferrão", "Université de Bretagne Occidentale"),
     ("Alessandro Bof", "UNIPAMPA"),
 ]
@@ -87,7 +91,8 @@ def scanner_view(key: str) -> dict:
 
 def create_app(data_dir: Path | None = None, models: list[str] | None = None,
                max_mb: float | None = None, retention_h: float | None = None,
-               max_queue: int | None = None, allow_private: bool | None = None) -> FastAPI:
+               max_queue: int | None = None, allow_private: bool | None = None,
+               rate_per_hour: int | None = None) -> FastAPI:
     data_dir = data_dir or Path(os.getenv("MULITAMINER_WEB_DATA", "outputs/web"))
     models = models or _env_models() or sorted(all_models())
     max_bytes = int((max_mb or float(os.getenv("MULITAMINER_WEB_MAX_MB", "20"))) * 1024 * 1024)
@@ -98,6 +103,9 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
     # user runs the app themselves (docker-compose.web.yml sets it).
     if allow_private is None:
         allow_private = os.getenv("MULITAMINER_WEB_ALLOW_PRIVATE_URLS", "") == "1"
+    # Submissions per client address per hour (behind Caddy, uvicorn's
+    # --proxy-headers makes request.client the real address).
+    rate = RateLimit(rate_per_hour or int(os.getenv("MULITAMINER_WEB_RATE_PER_HOUR", "10")))
     unknown = [m for m in models if m not in all_models()]
     if unknown:
         raise ValueError(f"MULITAMINER_WEB_MODELS names unknown profile(s) {unknown}")
@@ -173,6 +181,9 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         if store.pending() >= max_queue:
             return render(request, "app.html", form_context(error=t["e_busy"], **values),
                           status_code=503)
+        if not rate.allow(request.client.host if request.client else "?"):
+            return render(request, "app.html", form_context(error=t["e_rate"], **values),
+                          status_code=429)
         pdf = await report.read(max_bytes + 1)
         if len(pdf) > max_bytes:
             return bad(t["e_too_big"].format(mb=max_bytes // (1024 * 1024)))
@@ -199,12 +210,13 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         else:
             return bad(t["e_model"].format(m=model))
 
-        job = store.create(pdf, scanner, model, profile, api_key, profile_json=cfg)
+        job, token = store.create(pdf, scanner, model, profile, api_key, profile_json=cfg)
         worker.submit(job)
-        return RedirectResponse(f"/jobs/{job.id}", status_code=303)
+        return RedirectResponse(f"/jobs/{token}", status_code=303)
 
-    def job_or_404(job_id: str):
-        job = store.get(job_id)
+    def job_or_404(token: str):
+        """The link's token names the job (by hash) and decrypts its files."""
+        job = store.get(job_id(token))
         if job is None:
             raise HTTPException(404, "No such job (results are deleted after "
                                      f"{int(retention_h)} hours).")
@@ -223,26 +235,29 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
             "scanner": job.scanner, "model": job.model, "model_label": label,
         }
 
-    @app.get("/jobs/{job_id}")
-    def job_page(request: Request, job_id: str):
-        job = job_or_404(job_id)
-        return render(request, "job.html", {"job": status_payload(job), "downloads": DOWNLOADS})
+    @app.get("/jobs/{token}")
+    def job_page(request: Request, token: str):
+        job = job_or_404(token)
+        return render(request, "job.html", {"job": status_payload(job), "token": token,
+                                            "downloads": DOWNLOADS})
 
-    @app.get("/api/jobs/{job_id}")
-    def job_status(job_id: str):
-        return JSONResponse(status_payload(job_or_404(job_id)))
+    @app.get("/api/jobs/{token}")
+    def job_status(token: str):
+        return JSONResponse(status_payload(job_or_404(token)))
 
-    @app.get("/jobs/{job_id}/download/{fmt}")
-    def download(job_id: str, fmt: str):
-        job = job_or_404(job_id)
+    @app.get("/jobs/{token}/download/{fmt}")
+    def download(token: str, fmt: str):
+        job = job_or_404(token)
         if fmt not in DOWNLOADS:
             raise HTTPException(404, "Unknown format.")
         filename, _label = DOWNLOADS[fmt]
-        path = store.job_dir(job.id) / "run" / filename
-        if job.status != "done" or not path.is_file():
+        data = store.read_result(job, fernet(token), filename)
+        if data is None:
             raise HTTPException(404, "Not ready.")
         suffix = filename.split("results", 1)[1]   # ".xlsx", ".cais.csv", ...
-        return FileResponse(path, filename=f"mulitaminer-{job.scanner}-{job.id[:8]}{suffix}")
+        return Response(data, media_type=MEDIA.get(Path(filename).suffix, "application/octet-stream"),
+                        headers={"Content-Disposition":
+                                 f'attachment; filename="mulitaminer-{job.scanner}-{job.id[:8]}{suffix}"'})
 
     @app.get("/api/health")
     def health():

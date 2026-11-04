@@ -44,6 +44,7 @@ All optional, read at startup:
 | `MULITAMINER_WEB_MAX_MB` | `20` | Upload limit |
 | `MULITAMINER_WEB_RETENTION_H` | `24` | Hours a finished job (PDF, results, log) is kept |
 | `MULITAMINER_WEB_MAX_QUEUE` | `20` | Pending jobs accepted before the form answers "queue is full" (HTTP 503) |
+| `MULITAMINER_WEB_RATE_PER_HOUR` | `10` | Submissions per client address per hour before HTTP 429 |
 | `MULITAMINER_WEB_ALLOW_PRIVATE_URLS` | unset | `1` lets a custom profile point at localhost or a private network (your own machine only; on the public site it is an SSRF vector) |
 | `MULITAMINER2_LLMS_DIR` | unset | Extra profiles, as for the CLI ([ADDING_A_MODEL.md](ADDING_A_MODEL.md)) |
 
@@ -72,8 +73,14 @@ where they stand.
 | Asset | Where it is | Who can read it |
 | --- | --- | --- |
 | API key | the browser's password field until submit; the server's memory while the job runs | the user; the server operator (root on the box could dump memory or patch the code). Never on disk, never in logs, never echoed back into a page. |
-| The PDF and the results | `/data/jobs/<id>/` for the retention window, unencrypted | the operator; whoever has the job link (128-bit random id) |
+| The PDF and the results | `/data/jobs/<id>/`, encrypted at rest (Fernet, AES-128-CBC + HMAC) with a key derived from the job link; the server stores the hash of the link, not the link | whoever has the link. The operator sees only ciphertext on disk, plus the plaintext PDF during the run itself (seconds to hours) |
 | The report's content | the LLM provider the user chose | that provider, under its own terms |
+
+The job link is `/jobs/<token>`: the token's hash is the directory name and
+the token is the encryption key. Losing the link means losing the result;
+the server cannot recover it. Because the token travels in the URL, the
+containers run uvicorn with `--no-access-log`, and the Caddy site block
+should not log requests either (the AnonShield blocks do).
 
 Measures in the code: HTTPS terminated by Caddy; `type=password` input with
 autocomplete off; the key is not part of any URL or re-rendered form;
@@ -82,12 +89,15 @@ on every user-controlled string; downloads are looked up by slug, never by
 path; upload magic bytes and size checked server side; a custom `base_url`
 may not resolve to a private, loopback or link-local address on the public
 site (otherwise a user could make the server call internal services with
-their request); a queue cap bounds disk and CPU use by anonymous visitors.
+their request); a queue cap bounds disk and CPU use; a per-address rate
+limit (`MULITAMINER_WEB_RATE_PER_HOUR`, default 10) bounds abuse by one
+visitor.
 
 Not covered, by choice: there is no login, so results are only as private as
-the link; there is no rate limit per IP beyond the queue cap; the operator is
-trusted. The honest advice to users is on the form: use a key with a
-spending limit, and pseudonymize the report first if it is sensitive.
+the link; the rate limit is per address, so a botnet is not stopped (Caddy or
+a WAF would be the place for that); the operator is trusted while a job runs.
+The honest advice to users is on the form: use a key with a spending limit,
+and pseudonymize the report first if it is sensitive.
 
 ## Public deployment (behind Caddy)
 
@@ -112,6 +122,10 @@ for the other sites is 1 MB):
 mulitaminer.anonshield.org {
     request_body {
         max_size 20MB
+    }
+    # The job link in the URL is the decryption key for that job's files.
+    log {
+        output discard
     }
     reverse_proxy mulitaminer-web:8000
 }

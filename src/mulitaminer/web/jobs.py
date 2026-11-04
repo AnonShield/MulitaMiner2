@@ -1,10 +1,14 @@
 """Extraction jobs: one directory each under the data dir, one worker thread.
 
-The API key lives only on the in-memory Job while it is queued or running; it
-is never written to job.json, the run dir, or a log line.
+Secrets never touch the disk. The API key lives only on the in-memory Job
+while it is queued or running. The job link carries a random token that is
+both the job's name (its id is the token's hash) and the key that encrypts
+the PDF and every result file at rest; the server keeps neither.
 """
 from __future__ import annotations
 
+import base64
+import hashlib
 import ipaddress
 import json
 import logging
@@ -19,6 +23,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from cryptography.fernet import Fernet
 from openai import OpenAI
 
 from mulitaminer import settings
@@ -45,10 +50,22 @@ DOWNLOADS = {
 }
 # Marks a web-form profile as keyed; the dataclass means "keyless" by None.
 FORM_KEY_ENV = "WEB_FORM"
+ENC = ".enc"
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def job_id(token: str) -> str:
+    """The public id is the token's hash: knowing the id proves nothing."""
+    digest = hashlib.sha256(token.encode()).digest()
+    return base64.urlsafe_b64encode(digest)[:22].decode()
+
+
+def fernet(token: str) -> Fernet:
+    key = hashlib.sha256(b"mulitaminer-web:" + token.encode()).digest()
+    return Fernet(base64.urlsafe_b64encode(key))
 
 
 @dataclass
@@ -72,6 +89,7 @@ class Job:
     # Never persisted: see asdict filtering in JobStore.save.
     profile: ModelProfile | None = field(default=None, repr=False, compare=False)
     api_key: str | None = field(default=None, repr=False, compare=False)
+    cipher: Fernet | None = field(default=None, repr=False, compare=False)
 
     @property
     def finished(self) -> bool:
@@ -120,6 +138,21 @@ def build_client(profile: ModelProfile, api_key: str | None) -> LLMClient:
     return LLMClient(profile, transport=transport)
 
 
+def _seal(directory: Path, cipher: Fernet) -> None:
+    """Encrypt every plaintext file under directory in place (name + .enc)."""
+    for path in directory.rglob("*"):
+        if path.is_file() and path.suffix != ENC:
+            path.with_name(path.name + ENC).write_bytes(cipher.encrypt(path.read_bytes()))
+            path.unlink()
+
+
+def _shred(directory: Path) -> None:
+    """Delete any plaintext left behind (a job cut short by a restart)."""
+    for path in directory.rglob("*"):
+        if path.is_file() and path.suffix != ENC and path.name != "job.json":
+            path.unlink()
+
+
 class JobStore:
     """Jobs on disk under data_dir/jobs/<id>/, mirrored in memory."""
 
@@ -140,30 +173,40 @@ class JobStore:
             if not job.finished:
                 job.status, job.error = "failed", "The server restarted before this job finished; please resubmit."
                 job.finished_at = _now()
+                _shred(meta.parent)
             self._jobs[job.id] = job
             self.save(job)
 
     def create(self, pdf: bytes, scanner: str, model: str, profile: ModelProfile,
-               api_key: str | None, profile_json: dict | None = None) -> Job:
-        job = Job(id=secrets.token_urlsafe(16), scanner=scanner, model=model,
+               api_key: str | None, profile_json: dict | None = None) -> tuple[Job, str]:
+        """Store the job and return it with its token (the link; never kept)."""
+        token = secrets.token_urlsafe(32)
+        cipher = fernet(token)
+        job = Job(id=job_id(token), scanner=scanner, model=model,
                   profile_json=profile_json, created_at=_now(),
-                  profile=profile, api_key=api_key)
+                  profile=profile, api_key=api_key, cipher=cipher)
         d = self.job_dir(job.id)
         d.mkdir()
-        (d / "input.pdf").write_bytes(pdf)
+        (d / f"input.pdf{ENC}").write_bytes(cipher.encrypt(pdf))
         with self._lock:
             self._jobs[job.id] = job
         self.save(job)
-        return job
+        return job, token
 
     def get(self, job_id: str) -> Job | None:
         return self._jobs.get(job_id)
 
     def save(self, job: Job) -> None:
         job.updated_at = _now()
-        data = {k: v for k, v in asdict(job).items() if k not in ("profile", "api_key")}
+        data = {k: v for k, v in asdict(job).items() if k not in ("profile", "api_key", "cipher")}
         (self.job_dir(job.id) / "job.json").write_text(
             json.dumps(data, indent=2), encoding="utf-8")
+
+    def read_result(self, job: Job, cipher: Fernet, filename: str) -> bytes | None:
+        path = self.job_dir(job.id) / "run" / f"{filename}{ENC}"
+        if job.status != "done" or not path.is_file():
+            return None
+        return cipher.decrypt(path.read_bytes())
 
     def queue_position(self, job: Job) -> int:
         """Queued jobs created before this one (0 = next up)."""
@@ -231,8 +274,11 @@ class Worker:
         job.status, job.started_at = "running", _now()
         self.store.save(job)
         d = self.store.job_dir(job.id)
+        pdf = d / "input.pdf"
         try:
-            config = RunConfig(input_path=d / "input.pdf", scanner=job.scanner,
+            # The pipeline reads a file, so the PDF is plaintext for the run only.
+            pdf.write_bytes(job.cipher.decrypt((d / f"input.pdf{ENC}").read_bytes()))
+            config = RunConfig(input_path=pdf, scanner=job.scanner,
                                model=job.model, formats=EXPORTS, output_dir=d)
             client = build_client(job.profile, job.api_key)
             result, _ = pipeline_run(config, client=client, run_dir=d / "run",
@@ -248,8 +294,11 @@ class Worker:
             job.status, job.error = "failed", msg
             log.warning("job %s failed: %s", job.id, msg)
         finally:
+            pdf.unlink(missing_ok=True)
+            if (d / "run").is_dir():
+                _seal(d / "run", job.cipher)
             job.finished_at = _now()
-            job.profile, job.api_key = None, None
+            job.profile, job.api_key, job.cipher = None, None, None
             self.store.save(job)
 
 
@@ -272,3 +321,23 @@ class Cleaner:
             except Exception:
                 log.exception("cleanup failed")
             time.sleep(3600)
+
+
+class RateLimit:
+    """Sliding-window submissions per client address, in memory."""
+
+    def __init__(self, per_hour: int):
+        self.per_hour = per_hour
+        self._hits: dict[str, list[float]] = {}
+        self._lock = threading.Lock()
+
+    def allow(self, client: str) -> bool:
+        now = time.monotonic()
+        with self._lock:
+            hits = [t for t in self._hits.get(client, []) if now - t < 3600]
+            if len(hits) >= self.per_hour:
+                self._hits[client] = hits
+                return False
+            hits.append(now)
+            self._hits[client] = hits
+            return True

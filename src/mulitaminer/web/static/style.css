@@ -8,12 +8,12 @@
   --ok:#3ccf7a;--bad:#ef5350;
   --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'JetBrains Mono','Cascadia Code',Consolas,monospace;
-  --r-sm:6px;--r-md:10px;--r-lg:14px;--wrap:min(1080px,100% - 40px)}
+  --r-sm:6px;--r-md:10px;--r-lg:14px;--wrap:min(1080px,100% - 40px);--glow:.22}
 /* Light theme (opt-in via the header toggle): the warm paper palette of the experiment report. */
 :root[data-theme=light]{
-  --bg:#f4f1ea;--raised:#faf8f2;--elevated:#ece8de;--border:#e2ded4;--border2:#cbc5b7;
-  --text:#1a1a17;--text2:#52514e;--muted:#8a877d;
-  --accent:#d9541e;--accent-h:#b8431a;--accent-soft:rgba(217,84,30,.12);--amber:#b8650f}
+  --bg:#ebe6dc;--raised:#f6f3ec;--elevated:#e2dccf;--border:#d6cfc1;--border2:#b9b1a0;
+  --text:#1a1a17;--text2:#4d4b47;--muted:#7f7b71;
+  --accent:#d9541e;--accent-h:#b8431a;--accent-soft:rgba(217,84,30,.12);--amber:#a85d0e;--glow:.10}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;background:var(--bg)}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
@@ -77,7 +77,7 @@ section.block>.wrap>h2{margin-top:.5rem}
 /* landing: hero */
 .hero{padding:76px 0 24px;position:relative;overflow:hidden}
 .hero:before{content:"";position:absolute;left:50%;top:-220px;width:900px;height:520px;margin-left:-450px;pointer-events:none;
-  background:radial-gradient(closest-side,rgba(232,93,42,.22),rgba(243,147,35,.08) 55%,transparent 75%);filter:blur(10px)}
+  background:radial-gradient(closest-side,rgba(232,93,42,var(--glow)),rgba(243,147,35,.06) 55%,transparent 75%);filter:blur(10px)}
 .hero:after{content:"";position:absolute;right:-120px;top:120px;width:420px;height:420px;pointer-events:none;
   background:radial-gradient(closest-side,rgba(243,147,35,.12),transparent 70%)}
 .hero>.wrap{position:relative}
@@ -138,9 +138,7 @@ section.block>.wrap>h2{margin-top:.5rem}
 .stage .prog{position:absolute;left:0;bottom:0;height:3px;width:0;background:linear-gradient(90deg,var(--amber),var(--accent))}
 .stages.auto .stage[aria-selected=true] .prog{animation:prog 4s linear forwards}
 @keyframes prog{from{width:0}to{width:100%}}
-.stage-detail{margin-top:.8rem;padding:1.1rem 1.3rem;border-left:3px solid var(--accent);display:grid;grid-template-columns:220px 1fr;gap:1.2rem;align-items:center}
-@media (max-width:640px){.stage-detail{grid-template-columns:1fr}}
-.stage-detail .fig svg{padding:10px;filter:drop-shadow(0 0 14px rgba(232,93,42,.12))}
+.stage-detail{margin-top:.8rem;padding:1.1rem 1.3rem;border-left:3px solid var(--accent)}
 .stage-detail p{margin:0;color:var(--text2);font-size:.95rem}
 .stage-detail b{color:var(--text)}
 
@@ -217,7 +215,8 @@ select,input[type=password],input[type=text],textarea{width:100%;background:var(
 select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text2) 50%),linear-gradient(135deg,var(--text2) 50%,transparent 50%);background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:2.2rem}
 textarea{font:.8rem/1.5 var(--mono);resize:vertical}
 select:focus,input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
-input:disabled{color:var(--muted);background:var(--raised)}
+input:read-only{color:var(--muted);background:var(--raised);cursor:not-allowed}
+.lb small.flash{color:var(--accent-h);transition:color .2s}
 ::placeholder{color:var(--muted)}
 .keyrow{display:flex;gap:.45rem}
 .keyrow input{flex:1}

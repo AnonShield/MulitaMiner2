@@ -128,7 +128,6 @@ OID:1.3.6.1.4.1.25623.1.0.11270</pre>
         <div class="n">05</div><h3>{{ t.s5 }}</h3><p>{{ t.s5_t }}</p><i class="prog"></i></button>
     </div>
     <div class="card stage-detail" id="stage-detail">
-      <div class="fig" id="stage-fig"></div>
       <div class="txt">
         <p data-i="0"><b>{{ t.s1 }}.</b> {{ t.s1_d }}</p>
         <p data-i="1" hidden><b>{{ t.s2 }}.</b> {{ t.s2_d }}</p>
@@ -243,13 +242,11 @@ OID:1.3.6.1.4.1.25623.1.0.11270</pre>
   const stages = document.getElementById('stages');
   const tabs = [...stages.querySelectorAll('.stage')];
   const panes = document.querySelectorAll('#stage-detail .txt > p');
-  const fig = document.getElementById('stage-fig');
   let i = 0, timer = null;
   const select = n => {
     i = n;
     tabs.forEach((x, k) => x.setAttribute('aria-selected', k === n ? 'true' : 'false'));
     panes.forEach(p => p.hidden = p.dataset.i !== String(n));
-    fig.innerHTML = tabs[n].querySelector('svg').outerHTML;
   };
   const auto = () => { stages.classList.add('auto'); timer = setInterval(() => select((i + 1) % tabs.length), 4000); };
   const stop = () => { stages.classList.remove('auto'); clearInterval(timer); timer = null; };

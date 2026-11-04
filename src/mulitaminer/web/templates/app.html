@@ -160,8 +160,10 @@
   const syncModel = () => {
     const o = model.selectedOptions[0], local = o.dataset.local;
     custom.hidden = local !== 'maybe';
-    key.disabled = local === 'yes';
+    key.readOnly = local === 'yes';
     key.required = local === 'no';
+    key.placeholder = local === 'yes' ? T.f_key_local_ph : 'sk-…';
+    if (local === 'yes') key.value = '';
     mid.innerHTML = local === 'maybe' ? T.f_custom_id
       : T.f_modelid + ' <b>' + o.dataset.id + '</b> · ' + o.dataset.provider + (local === 'yes' ? ' · ' + T.f_served_local : '');
     note.textContent = local === 'yes' ? T.f_key_local : local === 'maybe' ? T.f_key_custom : T.f_key_req;
@@ -169,6 +171,7 @@
       ? ' <a href="' + o.dataset.keyurl + '" target="_blank" rel="noopener">' + T.f_get_key.replace('{p}', o.dataset.provider) + ' ↗</a>' : '');
   };
   model.addEventListener('change', syncModel); syncModel();
+  key.addEventListener('focus', () => { if (key.readOnly) { note.classList.add('flash'); setTimeout(() => note.classList.remove('flash'), 1600); } });
 
   document.getElementById('toggle-key').addEventListener('click', function () {
     const hidden = key.type === 'password';
