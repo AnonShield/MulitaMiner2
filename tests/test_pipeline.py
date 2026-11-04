@@ -113,3 +113,11 @@ def test_progress_receives_events(tmp_path):
     assert seen["segmented"] == result.block_count
     assert seen["chunks"] >= 1
     assert {"reading", "segmenting"} <= set(seen["stages"])
+
+
+def test_limit_keeps_only_the_first_blocks(tmp_path):
+    config = RunConfig(input_path=BASELINE_PDF, scanner="openvas", model="deepseek",
+                       output_dir=tmp_path, limit=5)
+    result, run_dir = run(config, client=EchoClient())
+    assert result.block_count == 5
+    assert json.loads((run_dir / "run.json").read_text(encoding="utf-8"))["config"]["limit"] == 5

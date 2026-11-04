@@ -49,6 +49,10 @@ def extract(
     csv: bool = typer.Option(False, "--csv", help="Shorthand for --export csv"),
     output_dir: Path | None = typer.Option(None, "--output-dir", help="Run artifacts root"),
     debug: bool = typer.Option(False, "--debug", help="Dump layout/blocks/LLM traffic to the run dir"),
+    limit: int | None = typer.Option(
+        None, "--limit", min=1,
+        help="Extract only the first N findings (tune a prompt on a big report)",
+    ),
 ) -> None:
     """Extract vulnerabilities from REPORT (file or directory) into run directories."""
     _setup_logging(debug)
@@ -65,6 +69,7 @@ def extract(
         )),
         output_dir=output_dir,
         debug=debug,
+        limit=limit,
     )
 
     if report.is_dir():

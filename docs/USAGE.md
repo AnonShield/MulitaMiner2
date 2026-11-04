@@ -33,6 +33,7 @@ uv run mulitaminer extract report.pdf --scanner openvas --model deepseek
 | `--xlsx` / `--csv` | Shorthands for `-e xlsx` / `-e csv` |
 | `--output-dir` | Run artifacts root, default `outputs/runs/` |
 | `--debug` | Also dump layout, blocks and raw LLM traffic |
+| `--limit N` | Extract only the first N findings: tune a scanner prompt on a big report without paying for the whole run |
 
 ### Directory mode (batch)
 

@@ -50,6 +50,7 @@ class RunConfig:
     formats: tuple[str, ...] = ()      # extra exports (see exporters registry)
     output_dir: Path | None = None     # default: settings.OUTPUTS_DIR
     debug: bool = False
+    limit: int | None = None           # keep only the first N blocks (prompt tuning)
 
     def snapshot(self) -> dict:
         return {
@@ -59,6 +60,7 @@ class RunConfig:
             "model_name": self.model_name,
             "formats": list(self.formats),
             "debug": self.debug,
+            "limit": self.limit,
         }
 
 
@@ -158,6 +160,9 @@ def run(config: RunConfig, client: LLMClient | None = None,
                 f"'{profile.name}' scanner profile; wrong --scanner?"
             )
         log.info("Segmented %d finding blocks", len(blocks))
+        if config.limit and config.limit < len(blocks):
+            log.info("Keeping the first %d of %d blocks (--limit)", config.limit, len(blocks))
+            blocks = blocks[:config.limit]
         progress.segmented(len(blocks))
 
         usage = TokenUsage()
