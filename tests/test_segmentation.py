@@ -156,3 +156,40 @@ def test_real_openvas_recovers_host():
     assert hosts != {None}, "host was not recovered from the per-host preamble"
     for host in hosts - {None}:
         assert re.fullmatch(r"(?:\d{1,3}\.){3}\d{1,3}", host)
+
+
+TENABLE_VM_FIXTURE = """\
+Asset ID ecff72d7-10a5-463a-b3d8-793047ce70d5
+Asset Details
+IPv4 Address:
+10.0.0.12
+Asset ID:
+ecff72d7-10a5-463a-b3d8-793047ce70d5
+Vulnerabilities Detected
+Plugin ID Plugin Name Severity
+113044 GitLab 11.9.x < 13.8.8 / 13.9.x < 13.9.6 / 13.10.x <
+13.10.3 Remote Code Execution
+Critical
+First Seen:
+2026-04-24
+Plugin Description:
+An issue has been discovered in GitLab CE/EE.
+Solution:
+Update to GitLab version 13.8.8 / 13.9.6 / 13.10.3 or later.
+10287 Traceroute Information Info
+Plugin Description:
+It was possible to obtain traceroute information.
+Plugin Output:
+Hop Count: 1
+"""
+
+
+def test_tenable_vm_rejoins_wrapped_rows_and_recovers_host():
+    blocks = get_scanner("tenable-vm").segment(TENABLE_VM_FIXTURE)
+    assert len(blocks) == 2
+    first, second = blocks
+    assert first.text.startswith(
+        "113044 GitLab 11.9.x < 13.8.8 / 13.9.x < 13.9.6 / 13.10.x < 13.10.3 Remote Code Execution Critical")
+    assert first.severity_hint == "CRITICAL" and second.severity_hint == "INFO"
+    assert first.host == "10.0.0.12" and second.host == "10.0.0.12"
+    assert "Hop Count: 1" in second.text and "Hop Count" not in first.text

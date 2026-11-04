@@ -48,7 +48,7 @@ ground-truth baselines.
 
 | | |
 | --- | --- |
-| Scanners | OpenVAS/Greenbone, Tenable WAS, Tenable Nessus, Qualys, Acunetix 360, OWASP ZAP |
+| Scanners | OpenVAS/Greenbone, Tenable WAS, Tenable Vulnerability Management, Tenable Nessus, Qualys, Acunetix 360, OWASP ZAP |
 | Cloud models | DeepSeek, OpenAI (gpt-4o-mini), Groq (Llama 3.3 70B), Claude (Haiku) |
 | Local models | Ollama, LM Studio, any OpenAI-compatible server. No API key needed. Includes a [fine-tuned 1.5B extractor](#fine-tuned-local-model) |
 | Exports | XLSX, CSV, SARIF 2.1.0, DefectDojo Generic JSON, CAIS, CSAF 2.0 |

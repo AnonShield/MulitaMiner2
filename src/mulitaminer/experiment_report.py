@@ -713,7 +713,7 @@ const RUNS_N=(C.runs)||1, SHOW_STD=RUNS_N>1;
 // separator, so "openvas_tomcat_7.0.70" loses its version but "ZAP_JBoss7"
 // keeps the 7 that is part of the product name.
 const SCAN_ABBR={openvas:'OV','openvas-v2':'OV',nessus:'NS',qualys:'QL',
-                 tenable:'TN',tenablewas:'TN',acunetix:'AX',zap:'ZAP'};
+                 tenable:'TN',tenablewas:'TN','tenable-vm':'TVM',acunetix:'AX',zap:'ZAP'};
 const shortT=tg=>{const sc=(SCAN_OF[tg]||'').toLowerCase();
   const pre=SCAN_ABBR[sc]||(sc?sc.toUpperCase().slice(0,3):'?');
   const n=tg.replace(new RegExp('^'+sc.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[_-]','i'),'')

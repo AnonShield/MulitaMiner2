@@ -112,8 +112,36 @@ class ScannerProfile:
         return self.prompt_path.read_text(encoding="utf-8")
 
 
+def _join_wrapped_rows(lines: list[str], start: re.Pattern, until: re.Pattern,
+                       max_lines: int) -> list[str]:
+    """Rejoin table rows the PDF text split across lines: a line matching
+    `start` that does not yet satisfy `until` absorbs the following lines until
+    one does, within `max_lines` lines in total. Anything else is left as is."""
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        end = None
+        if start.match(line) and not until.search(line):
+            for j in range(i + 1, min(i + max_lines, len(lines))):
+                if until.search(lines[j]):
+                    end = j
+                    break
+        if end is None:
+            out.append(line)
+            i += 1
+        else:
+            out.append(" ".join(ln.strip() for ln in lines[i:end + 1]))
+            i = end + 1
+    return out
+
+
 def _build_segmenter(cfg: dict):
     marker = re.compile(cfg["marker_pattern"])
+    join = cfg.get("marker_join")
+    join_start = re.compile(join["start"]) if join else None
+    join_until = re.compile(join["until"]) if join else None
+    join_max = int(join.get("max_lines", 3)) if join else 0
     context = cfg.get("context") or {}
     headers = [re.compile(p, re.IGNORECASE) for p in context.get("header_patterns", [])]
     host_anchor = re.compile(context["host_anchor"], re.IGNORECASE) if "host_anchor" in context else None
@@ -129,6 +157,8 @@ def _build_segmenter(cfg: dict):
         lines = text.splitlines()
         if discard:
             lines = [ln for ln in lines if not any(p.fullmatch(ln.strip()) for p in discard)]
+        if join_start:
+            lines = _join_wrapped_rows(lines, join_start, join_until, join_max)
         host = port = proto = None
         last_nonblank: str | None = None
         markers: list[tuple[int, dict]] = []

@@ -57,6 +57,7 @@ untouched and keep one worked example.
 | `max_vulns_per_chunk` | Max blocks per LLM call |
 | `marker_pattern` | Regex; one match line = one block. Capture group 1 becomes the severity hint. Prefix `(?i)` for case-insensitive |
 | `name_above_marker` | The finding name is the single line above the marker and is pulled into the block |
+| `marker_join` | `{"start", "until", "max_lines"}`: a table row the PDF text wrapped is rejoined before the marker is tested. A line matching `start` that does not satisfy `until` absorbs the next lines until one does, within `max_lines`. For reports whose `<id> <name> <severity>` row breaks when the name is long (Tenable VM) |
 | `name_stop_pattern` | A line matching it is never taken as the name |
 | `discard_patterns` | Regexes (case-insensitive); a line the pattern fully matches is dropped before segmentation. For pure report noise (e.g. a `2 Results per Host 7` table cell) that would otherwise pollute a block or its name. Never matches a marker, so block count is unchanged |
 | `context.header_patterns` | Regexes with named groups `sev`/`port`/`proto`; the latest match above a marker becomes that block's context |
@@ -169,6 +170,36 @@ export by `tools/nessus_html_to_baseline.py`, because a trial license cannot
 produce the CSV export.
 
 `max_vulns_per_chunk: 3`, empirical calibration.
+
+## Tenable VM (`tenable-vm.json`)
+
+Tenable Vulnerability Management's "Vulnerabilities by Asset" PDF, a
+different product and layout from Tenable WAS even though both run Nessus
+plugins: findings are grouped per asset, each opening with a table row
+`<plugin id> <plugin name> <severity>` and carrying `Plugin Description:`,
+`Solution:`, `See Also:`, the CVSS lines, `Reference Information:`,
+`Plugin Family:` and `Plugin Output:`, mostly with the value on the line
+after the label. No per-finding port, so `port`/`protocol` are always null.
+
+`marker_join`: when the plugin name is long the row wraps, and the severity
+word lands alone two lines below (`113044 GitLab 11.9.x < ...` /
+`13.10.3 Remote Code Execution` / `Critical`). The row is rejoined before the
+marker runs; on a 657-page report that recovered 20 of 382 findings the
+one-line marker missed. Checked by counting `Plugin Description:` lines,
+exactly one per finding.
+
+`context.host_anchor` / `host_line`: the asset header prints `IPv4 Address:`
+with the IP on the next line, followed by `Asset ID:`; the anchor is
+`Asset ID:` and the host is the bare-IP line just above it.
+
+`First Seen:` / `Last Seen:` are scan metadata printed after the opening
+row; the prompt tells the model to ignore them. `See Also` entries carry a
+`- ` bullet that the prompt strips.
+
+`evaluation.key_parts: ["host", "plugin"]`: the same plugin fires on several
+assets, and there is no port to tell instances apart.
+
+`max_vulns_per_chunk: 3`, copied from Nessus; not yet calibrated.
 
 ## Engine-wide rules (not configurable)
 
