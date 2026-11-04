@@ -1,6 +1,7 @@
 """FastAPI app: landing page, upload form, job page, downloads (docs/WEB.md)."""
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
@@ -33,6 +34,10 @@ SECURITY_HEADERS = {
 
 HERE = Path(__file__).parent
 CUSTOM = "custom"
+# Cache-buster for /static URLs: changes whenever a static file changes, so a
+# browser never keeps an old stylesheet or logo across deployments.
+STATIC_V = hashlib.sha256(b"".join(
+    p.read_bytes() for p in sorted((HERE / "static").iterdir()) if p.is_file())).hexdigest()[:10]
 PROFILE_TEMPLATE = json.dumps({
     "key": "my-model",
     "model": "provider-model-id",
@@ -162,6 +167,7 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
             "langs": [{"code": c, "label": lbl, "url": f"{request.url.path}?lang={c}"}
                       for c, lbl in LANGS.items()],
             "retention_h": int(retention_h), "max_mb": max_bytes // (1024 * 1024),
+            "v": STATIC_V,
         }
         resp = templates.TemplateResponse(request, name, base | ctx, status_code=status_code)
         if request.query_params.get("lang") in LANGS:

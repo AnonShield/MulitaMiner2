@@ -212,14 +212,26 @@
     const b = ev.target.closest('.forget'); if (!b) return;
     const tok = b.closest('li').dataset.token; list = list.filter(j => j.token !== tok); save(list); render(list);
   });
-  list.forEach(async j => {
-    try {
-      const r = await fetch('/api/jobs/' + j.token, {cache: 'no-store'});
-      if (r.status === 404) { list = list.filter(x => x.token !== j.token); save(list); render(list); return; }
-      const s = await r.json(); j.status = s.status; const li = ul.querySelector(`li[data-token="${j.token}"] .dot`);
-      if (li) { li.className = 'dot ' + s.status; li.title = T['st_' + s.status] || s.status; }
-    } catch (e) {}
-  });
+  // Refresh the status of every entry now, then keep refreshing the unfinished
+  // ones while this page stays open.
+  const refresh = async () => {
+    let pending = false;
+    for (const j of [...list]) {
+      if (j.status === 'done' || j.status === 'failed') continue;
+      try {
+        const r = await fetch('/api/jobs/' + j.token, {cache: 'no-store'});
+        if (r.status === 404) { list = list.filter(x => x.token !== j.token); save(list); render(list); continue; }
+        const s = await r.json(); j.status = s.status;
+        const dot = ul.querySelector(`li[data-token="${j.token}"] .dot`);
+        if (dot) { dot.className = 'dot ' + s.status; dot.title = T['st_' + s.status] || s.status; }
+        if (s.status !== 'done' && s.status !== 'failed') pending = true;
+      } catch (e) { pending = true; }
+    }
+    save(list);
+    if (pending) setTimeout(refresh, 10000);
+  };
+  list.forEach(j => { if (j.status === 'done' || j.status === 'failed') j.status = undefined; });  // recheck: it may be gone
+  refresh();
 })();
 </script>
 {% endblock %}

@@ -45,7 +45,7 @@
     <p class="lb" style="margin-top:1.3rem">{{ t.j_also }}</p>
     <div class="chips">
       {% for slug, (file, label) in downloads.items() if slug not in ('xlsx', 'csv', 'json') %}
-      <a class="chip" href="/jobs/{{ token }}/download/{{ slug }}">{{ label }} ↓</a>
+      <a class="chip" href="/jobs/{{ token }}/download/{{ slug }}">{{ label }}<svg class="ic" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.5v6M5.5 8l2.5 2.5L10.5 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       {% endfor %}
     </div>
     <p class="hint">{{ t.j_also_p }}</p>
@@ -57,8 +57,7 @@
   </div>
 
   <p class="lb" id="term-lb" style="margin-top:1.3rem" {% if not job.log %}hidden{% endif %}>{{ t.j_log }}</p>
-  <pre class="term" id="term">{% for line in job.log %}{{ line }}
-{% endfor %}</pre>
+  <pre class="term" id="term"></pre>
 </section>
 
 <section class="card jobsteps">
@@ -90,6 +89,19 @@
   } catch (e) {}
   const mark = stage => document.querySelectorAll('#steps li').forEach(li => li.classList.toggle('cur', li.dataset.s === stage));
   mark(root.dataset.status === 'running' ? '{{ job.stage }}' : '');
+  // Log lines are "HH:MM:SS LEVEL message": dim the time, colour by level.
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const renderLog = lines => {
+    const term = $('term'), atBottom = term.scrollHeight - term.scrollTop - term.clientHeight < 8;
+    term.innerHTML = lines.map(l => {
+      const m = /^(\d\d:\d\d:\d\d) (INFO|WARNING|ERROR|DEBUG) (.*)$/.exec(l);
+      return m ? `<span class="l l-${m[2]}"><span class="ts">${m[1]}</span> <span class="lv">${m[2]}</span> ${esc(m[3])}</span>`
+               : `<span class="l">${esc(l)}</span>`;
+    }).join('\n') + (lines.length ? '\n' : '');
+    $('term-lb').hidden = lines.length === 0;
+    if (atBottom) term.scrollTop = term.scrollHeight;
+  };
+  renderLog({{ job.log | tojson }});
   if (root.dataset.status === 'done' || root.dataset.status === 'failed') return;
   const tick = async () => {
     let j;
@@ -102,11 +114,7 @@
       ? (j.queue_position ? T.q_pos.replace('{n}', j.queue_position + 1) : T.q_next)
       : (T['stage_' + j.stage] || j.stage || T.starting);
     mark(j.status === 'running' ? j.stage : '');
-    if (j.log && j.log.length) {
-      const term = $('term'), atBottom = term.scrollHeight - term.scrollTop - term.clientHeight < 8;
-      term.textContent = j.log.join('\n') + '\n'; $('term-lb').hidden = false;
-      if (atBottom) term.scrollTop = term.scrollHeight;
-    }
+    if (j.log && j.log.length) renderLog(j.log);
     const bar = $('bar');
     if (j.total_blocks) {
       bar.removeAttribute('data-indeterminate');

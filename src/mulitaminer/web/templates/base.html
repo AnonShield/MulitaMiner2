@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}MulitaMiner{% endblock %}</title>
 <meta name="description" content="{{ t.lead }}">
-<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="/static/logo.svg?v={{ v }}" type="image/svg+xml">
+<link rel="stylesheet" href="/static/style.css?v={{ v }}">
 <script>try{const q=new URLSearchParams(location.search).get('theme');const s=q||localStorage.getItem('theme');if(s==='light'||s==='dark'){document.documentElement.dataset.theme=s;if(q)localStorage.setItem('theme',s)}}catch(e){}</script>
 </head>
 <body>
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="/"><img class="on-dark" src="/static/logo.svg" alt=""><img class="on-light" src="/static/logo-dark.svg" alt=""><span class="word">Mulita<b>Miner</b></span></a>
+    <a class="brand" href="/"><img class="on-dark" src="/static/logo.svg?v={{ v }}" alt=""><img class="on-light" src="/static/logo-dark.svg?v={{ v }}" alt=""><span class="word">Mulita<b>Miner</b></span></a>
     <nav>
       {% block nav %}
       <a href="/#how">{{ t.nav_how }}</a>

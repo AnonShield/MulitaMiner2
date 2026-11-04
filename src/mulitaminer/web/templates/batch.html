@@ -30,13 +30,13 @@
   <p class="lb" style="margin-top:1.3rem">{{ t.b_zip }}</p>
   <div class="actions">
     {% for slug in ('xlsx', 'csv', 'json') %}
-    <a class="btn btn-primary bdl" href="/batch/{{ tokens }}/download/{{ slug }}">ZIP · {{ slug | upper }}</a>
+    <a class="btn btn-primary bdl" href="/batch/{{ tokens }}/download/{{ slug }}">{{ slug | upper }}</a>
     {% endfor %}
     <a class="btn btn-ghost" href="/app">{{ t.j_another }}</a>
   </div>
   <div class="chips" style="margin-top:.7rem">
     {% for slug, (file, label) in downloads.items() if slug not in ('xlsx', 'csv', 'json') %}
-    <a class="chip bdl" href="/batch/{{ tokens }}/download/{{ slug }}">ZIP · {{ label }} ↓</a>
+    <a class="chip bdl" href="/batch/{{ tokens }}/download/{{ slug }}">{{ label }}<svg class="ic" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.5v6M5.5 8l2.5 2.5L10.5 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
     {% endfor %}
   </div>
   <p class="hint">{{ t.b_zip_hint }}</p>
