@@ -29,6 +29,10 @@ h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.02em}
 h2{font-size:1.7rem;font-weight:700}
 .wrap{width:var(--wrap);margin:0 auto}
 .kick{font:600 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+.ic{width:1em;height:1em;flex:none}
+.kick .ic{width:14px;height:14px;vertical-align:-3px;margin-right:.45rem}
+.support h3,.sister h3{display:flex;align-items:center;gap:.5rem}
+.support h3 .ic,.sister h3 .ic{width:18px;height:18px;color:var(--accent)}
 .sub{color:var(--text2);max-width:64ch;margin:.5rem 0 0}
 section.block{padding:72px 0 0}
 section.block>.wrap>h2{margin-top:.5rem}
@@ -41,8 +45,10 @@ section.block>.wrap>h2{margin-top:.5rem}
 .brand .on-light{display:none}
 :root[data-theme=light] .brand .on-dark{display:none}
 :root[data-theme=light] .brand .on-light{display:block}
-.theme{background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:999px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;margin-left:.4rem;cursor:pointer;padding:0}
-.theme:hover{color:var(--text);border-color:var(--text2)}
+/* language + theme share one 32px pill; "Launch app" is the only solid button */
+.ctrl{display:inline-flex;align-items:stretch;height:32px;border:1px solid var(--border2);border-radius:999px;margin-left:.6rem;overflow:hidden}
+.theme{background:transparent;border:0;border-left:1px solid var(--border2);color:var(--text2);width:34px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.theme:hover{color:var(--text);background:var(--elevated)}
 .theme .sun{display:none}
 :root[data-theme=light] .theme .sun{display:block}
 :root[data-theme=light] .theme .moon{display:none}
@@ -51,10 +57,10 @@ section.block>.wrap>h2{margin-top:.5rem}
 .top nav{display:flex;align-items:center;gap:.25rem;flex-wrap:nowrap;flex-shrink:0}
 .top nav a{color:var(--text2);text-decoration:none;font:500 .85rem var(--sans);padding:.45rem .7rem;border-radius:var(--r-sm);white-space:nowrap}
 .top nav a:hover{color:var(--text);background:var(--elevated)}
-.top nav a.cta{background:var(--btn);color:#fff;margin-left:.5rem}
+.top nav a.cta{background:var(--btn);color:#fff;margin-left:.5rem;height:32px;display:inline-flex;align-items:center;padding:0 .9rem}
 .top nav a.cta:hover{background:var(--btn-h)}
-.lang{display:inline-flex;position:relative;border:1px solid var(--border2);border-radius:999px;padding:2px;margin-left:.6rem}
-.top nav .lang a{position:relative;z-index:1;font:600 .68rem var(--mono);padding:.3rem .5rem;border-radius:999px;color:var(--muted);transition:color .26s}
+.lang{display:inline-flex;position:relative;align-items:center;padding:2px}
+.top nav .lang a{position:relative;z-index:1;font:600 .68rem var(--mono);height:26px;display:inline-flex;align-items:center;padding:0 .55rem;border-radius:999px;color:var(--muted);transition:color .26s}
 .top nav .lang a[aria-current]{color:var(--amber)}
 .lang:not(.js) a[aria-current]{background:var(--elevated)}
 .lang i{position:absolute;top:2px;bottom:2px;left:0;width:0;border-radius:999px;background:var(--elevated);transition:left .26s cubic-bezier(.4,0,.2,1),width .26s cubic-bezier(.4,0,.2,1)}
@@ -68,9 +74,8 @@ section.block>.wrap>h2{margin-top:.5rem}
   .top.open nav{display:grid}
   .top nav a{grid-column:1/-1;padding:.9rem .2rem;font-size:1.02rem;border-bottom:1px solid var(--border);border-radius:0}
   .top nav a:after{content:"→";float:right;color:var(--muted)}
-  .top nav .lang{grid-column:1;margin:.9rem 0 0;justify-self:start}
-  .top nav .theme{grid-column:2;margin:.9rem 0 0}
-  .top nav a.cta{grid-column:1/-1;margin:.9rem 0 0;text-align:center;border:0;padding:.8rem}
+  .top nav .ctrl{grid-column:1/-1;margin:.9rem 0 0;justify-self:start}
+  .top nav a.cta{grid-column:1/-1;margin:.9rem 0 0;justify-content:center;border:0;height:auto;padding:.8rem}
   .top nav a.cta:after{content:none}
 }
 
@@ -122,7 +127,7 @@ a.chip:hover .ic{color:var(--accent-h)}
 .demo .link{align-self:center;justify-self:center;display:flex;align-items:center}
 .demo .link .dots{stroke:var(--amber);animation:dash 1.4s linear infinite}
 .demo .link .node{fill:var(--raised);stroke:var(--accent);filter:drop-shadow(0 0 10px rgba(232,93,42,.45))}
-.demo .link .lbl{fill:var(--amber)}
+.demo .link .bot{color:var(--amber)}
 .demo .link .head{fill:var(--accent)}
 @keyframes dash{to{stroke-dashoffset:-14}}
 @media (max-width:860px){.demo{grid-template-columns:1fr}.demo .link svg{height:96px}.demo .link svg .flow{transform-origin:48px 60px;transform:rotate(90deg)}}
