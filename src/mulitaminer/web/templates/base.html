@@ -5,15 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}MulitaMiner{% endblock %}</title>
 <meta name="description" content="{{ t.lead }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MulitaMiner">
+<meta property="og:title" content="MulitaMiner · {{ t.h1 }}">
+<meta property="og:description" content="{{ t.lead }}">
+<meta property="og:url" content="{{ site_url }}{{ request.url.path }}">
+<meta property="og:image" content="{{ site_url }}/static/og.png?v={{ v }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/static/logo.svg?v={{ v }}" type="image/svg+xml">
 <link rel="stylesheet" href="/static/style.css?v={{ v }}">
 <script>try{const q=new URLSearchParams(location.search).get('theme');const s=q||localStorage.getItem('theme');if(s==='light'||s==='dark'){document.documentElement.dataset.theme=s;if(q)localStorage.setItem('theme',s)}}catch(e){}</script>
 </head>
 <body>
-<header class="top">
+<div class="bg" aria-hidden="true"></div>
+<header class="top" id="top">
   <div class="wrap">
     <a class="brand" href="/"><img class="on-dark" src="/static/logo.svg?v={{ v }}" alt=""><img class="on-light" src="/static/logo-dark.svg?v={{ v }}" alt=""><span class="word">Mulita<b>Miner</b></span></a>
-    <nav>
+    <button class="menu" id="menu" type="button" aria-label="{{ t.menu }}" aria-expanded="false" aria-controls="nav">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="i1" d="M4 7h16M4 12h16M4 17h16"/><path class="i2" d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <nav id="nav">
       {% block nav %}
       <a href="/#how">{{ t.nav_how }}</a>
       <a href="/#research">{{ t.nav_research }}</a>
@@ -34,13 +47,32 @@
 </main>
 <footer>
   <div class="wrap">
-    <span>MulitaMiner · MIT · UNIPAMPA</span>
-    <nav>
-      <a href="https://github.com/INARI18/MulitaMiner2" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://huggingface.co/Inari18/mulita-extractor-qwen2.5-1.5b" target="_blank" rel="noopener">{{ t.foot_model }}</a>
-      <a href="https://anonshield.org" target="_blank" rel="noopener">AnonShield</a>
-      <span>{{ t.foot_deleted.format(h=retention_h) }}</span>
-    </nav>
+    <div class="fcols">
+      <div class="fbrand">
+        <span class="word">Mulita<b>Miner</b></span>
+        <p>{{ t.foot_tag }}</p>
+        <p class="fine">{{ t.foot_deleted.format(h=retention_h) }} · MIT</p>
+      </div>
+      <div>
+        <h4>{{ t.foot_product }}</h4>
+        <a href="/app">{{ t.nav_launch }}</a>
+        <a href="/#how">{{ t.nav_how }}</a>
+        <a href="https://github.com/INARI18/MulitaMiner2/blob/main/docs/USAGE.md" target="_blank" rel="noopener">{{ t.foot_docs }}</a>
+        <a href="https://github.com/INARI18/MulitaMiner2" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <div>
+        <h4>{{ t.foot_research }}</h4>
+        <a href="/#research">{{ t.nav_research }}</a>
+        <a href="https://huggingface.co/Inari18/mulita-extractor-qwen2.5-1.5b" target="_blank" rel="noopener">{{ t.foot_model }}</a>
+        <a href="https://zenodo.org/records/19539374" target="_blank" rel="noopener">Zenodo</a>
+      </div>
+      <div>
+        <h4>{{ t.foot_group }}</h4>
+        <a href="/#team">{{ t.team_kick }}</a>
+        <a href="https://anonshield.org" target="_blank" rel="noopener">AnonShield</a>
+        <a href="https://unipampa.edu.br" target="_blank" rel="noopener">UNIPAMPA</a>
+      </div>
+    </div>
   </div>
 </footer>
 <script>
@@ -48,6 +80,10 @@ document.getElementById('theme').addEventListener('click', () => {
   const root = document.documentElement;
   root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';   // dark is the default
   try { localStorage.setItem('theme', root.dataset.theme); } catch (e) {}
+});
+document.getElementById('menu').addEventListener('click', function () {
+  const open = document.getElementById('top').classList.toggle('open');
+  this.setAttribute('aria-expanded', open ? 'true' : 'false');
 });
 </script>
 {% block scripts %}{% endblock %}

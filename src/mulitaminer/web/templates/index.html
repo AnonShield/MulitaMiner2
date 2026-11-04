@@ -239,6 +239,22 @@ OID:1.3.6.1.4.1.25623.1.0.11270</pre>
 {% block scripts %}
 <script>
 (function () {
+  // The extracted record "types itself" once: lines appear one by one with a cursor.
+  const out = document.querySelector('.demo .pane:last-child pre');
+  if (out) {
+    const lines = out.innerHTML.split('\n');
+    out.innerHTML = lines.map(l => '<span class="ln">' + l + '</span>').join('\n');
+    out.classList.add('typing');
+    const spans = [...out.querySelectorAll('.ln')];
+    const cur = document.createElement('span'); cur.className = 'cur'; out.appendChild(cur);
+    let i = 0;
+    const step = () => {
+      if (i < spans.length) { spans[i++].classList.add('on'); setTimeout(step, 90); }
+      else { cur.remove(); out.classList.remove('typing'); }
+    };
+    setTimeout(step, 500);
+  }
+
   const stages = document.getElementById('stages');
   const tabs = [...stages.querySelectorAll('.stage')];
   const panes = document.querySelectorAll('#stage-detail .txt > p');

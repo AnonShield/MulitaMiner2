@@ -8,6 +8,7 @@ EN = {
     "nav_how": "How it works", "nav_research": "Research", "nav_launch": "Launch app",
     "nav_home": "← Home", "nav_new": "New extraction",
     "foot_deleted": "Uploads are deleted after {h} h", "foot_model": "Model on Hugging Face",
+    "menu": "Menu", "foot_tag": "Structured vulnerability data from scanner reports, with LLMs.", "foot_product": "Product", "foot_docs": "Documentation", "foot_research": "Research", "foot_group": "Group",
     # landing
     "badge": "Public demo · cloud models · bring your own key",
     "h1": "Scanner reports in. Structured findings out.",
@@ -152,6 +153,7 @@ PT = {
     "nav_how": "Como funciona", "nav_research": "Pesquisa", "nav_launch": "Abrir o app",
     "nav_home": "← Início", "nav_new": "Nova extração",
     "foot_deleted": "Uploads são apagados após {h} h", "foot_model": "Modelo no Hugging Face",
+    "menu": "Menu", "foot_tag": "Dados estruturados de vulnerabilidades a partir de relatórios de scanner, com LLMs.", "foot_product": "Produto", "foot_docs": "Documentação", "foot_research": "Pesquisa", "foot_group": "Grupo",
     "badge": "Demo pública · modelos em nuvem · use sua própria chave",
     "h1": "Entra o relatório do scanner. Saem achados estruturados.",
     "lead": "Scanners de vulnerabilidade entregam um PDF, cada fabricante com seu layout. O MulitaMiner lê o PDF, isola cada achado e devolve um registro estruturado por vulnerabilidade, pronto para planilha, tracker ou fila de risco.",
@@ -292,6 +294,7 @@ ES = {
     "nav_how": "Cómo funciona", "nav_research": "Investigación", "nav_launch": "Abrir la app",
     "nav_home": "← Inicio", "nav_new": "Nueva extracción",
     "foot_deleted": "Los archivos se borran tras {h} h", "foot_model": "Modelo en Hugging Face",
+    "menu": "Menú", "foot_tag": "Datos estructurados de vulnerabilidades a partir de informes de escáner, con LLM.", "foot_product": "Producto", "foot_docs": "Documentación", "foot_research": "Investigación", "foot_group": "Grupo",
     "badge": "Demo pública · modelos en la nube · usa tu propia clave",
     "h1": "Entra el informe del escáner. Salen hallazgos estructurados.",
     "lead": "Los escáneres de vulnerabilidades entregan un PDF, cada fabricante con su propio formato. MulitaMiner lo lee, aísla cada hallazgo y devuelve un registro estructurado por vulnerabilidad, listo para una hoja de cálculo, un tracker o una cola de riesgo.",

@@ -173,7 +173,7 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
             "langs": [{"code": c, "label": lbl, "url": f"{request.url.path}?lang={c}"}
                       for c, lbl in LANGS.items()],
             "retention_h": int(retention_h), "max_mb": max_bytes // (1024 * 1024),
-            "v": STATIC_V,
+            "v": STATIC_V, "site_url": str(request.base_url).rstrip("/"),
         }
         resp = templates.TemplateResponse(request, name, base | ctx, status_code=status_code)
         if request.query_params.get("lang") in LANGS:
