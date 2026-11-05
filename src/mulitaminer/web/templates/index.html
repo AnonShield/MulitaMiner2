@@ -310,12 +310,25 @@
       };
       render(0); typing = setTimeout(tick, 400);
     };
+    // The active-tab highlight slides; the report crossfades; the record fades out, then retypes.
+    const tabsBox = demo.querySelector('.tabs'), tpill = document.createElement('i');
+    tabsBox.prepend(tpill);
+    const placeTab = b => { tpill.style.left = b.offsetLeft + 'px'; tpill.style.width = b.offsetWidth + 'px'; };
+    const settleTab = () => { tpill.style.transition = 'none'; placeTab(dtabs[cur]); void tpill.offsetWidth; tpill.style.transition = ''; };
     const pick = i => {
+      const first = !out.innerHTML;
       cur = i;
       dtabs.forEach((b, k) => b.setAttribute('aria-selected', k === i ? 'true' : 'false'));
+      placeTab(dtabs[i]);
       docs.forEach((d, k) => d.classList.toggle('on', k === i));
-      typeFrom(ghosts[i]);
+      clearTimeout(typing);
+      if (first) { typeFrom(ghosts[i]); return; }
+      out.classList.add('fade');
+      typing = setTimeout(() => { out.classList.remove('fade'); typeFrom(ghosts[i]); }, 240);
     };
+    settleTab(); requestAnimationFrame(() => tabsBox.classList.add('js'));
+    if (document.fonts) document.fonts.ready.then(settleTab);
+    window.addEventListener('resize', settleTab);
     const startCycle = () => { cycle = setInterval(() => pick((cur + 1) % dtabs.length), 11000); };
     const stopCycle = () => { clearInterval(cycle); cycle = null; };
     dtabs.forEach((b, k) => b.addEventListener('click', () => { stopCycle(); demo.dataset.touched = '1'; pick(k); }));

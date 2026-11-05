@@ -401,11 +401,17 @@ main,footer{position:relative;z-index:1}
    keep the height of the tallest one and nothing jumps when the tab changes */
 .doc .docs,.demo .pres{display:grid}
 .doc .docs>.docbody,.demo .pres>pre{grid-area:1/1}
-.doc .docbody:not(.on),.demo pre.ghost{visibility:hidden}
-.demo .pane .ph .tabs{display:flex;gap:.15rem;color:inherit;font-weight:600;letter-spacing:.06em;text-transform:inherit}
-.tabs button{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--muted);background:transparent;border:1px solid transparent;border-radius:999px;padding:.2rem .5rem;cursor:pointer;transition:color .15s,background .15s}
+.demo pre.ghost{visibility:hidden}
+.doc .docbody{opacity:0;visibility:hidden;transform:translateY(5px);transition:opacity .35s,transform .35s,visibility 0s .35s}
+.doc .docbody.on{opacity:1;visibility:visible;transform:none;transition:opacity .35s,transform .35s,visibility 0s}
+.demo pre.typed{transition:opacity .24s}
+.demo pre.typed.fade{opacity:0}
+.demo .pane .ph .tabs{display:flex;position:relative;gap:.15rem;color:inherit;font-weight:600;letter-spacing:.06em;text-transform:inherit}
+.tabs button{position:relative;z-index:1;font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--muted);background:transparent;border:1px solid transparent;border-radius:999px;padding:.2rem .5rem;cursor:pointer;transition:color .3s}
 .tabs button:hover{color:var(--text2)}
-.tabs button[aria-selected=true]{color:var(--amber);background:var(--accent-soft)}
+.tabs button[aria-selected=true]{color:var(--amber)}
+.tabs:not(.js) button[aria-selected=true]{background:var(--accent-soft)}
+.tabs i{position:absolute;top:0;bottom:0;left:0;width:0;border-radius:999px;background:var(--accent-soft);transition:left .3s cubic-bezier(.4,0,.2,1),width .3s cubic-bezier(.4,0,.2,1)}
 
 /* eye toggle on the key field: the icon shows the state (crossed = hidden) */
 .keyrow .btn svg{display:block}
