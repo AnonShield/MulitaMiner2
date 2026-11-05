@@ -74,14 +74,14 @@ SCANNERS = {
     "zap": ("OWASP ZAP", "ZAP traditional report, printed to PDF"),
 }
 # Union of the authors of the four MulitaMiner papers, in author order:
-# (name, affiliation, role key in i18n, ORCID iD or "").
+# (name, affiliation, ORCID iD).
 TEAM = [
-    ("Beatriz Machado", "UNIPAMPA", "author_f", "0009-0002-2750-0323"),
-    ("Douglas Lautert", "UNIPAMPA", "coauthor_m", "0009-0005-9036-5453"),
-    ("Cristhian Kapelinski", "UNIPAMPA", "coauthor_m", "0009-0005-5750-022X"),
-    ("Diego Kreutz", "UNIPAMPA", "advisor_m", "0000-0003-0830-0238"),
-    ("Isadora Garcia Ferrão", "UBO", "coauthor_f", "0000-0002-0612-486X"),
-    ("Alessandro Bof", "UNIPAMPA", "coauthor_m", "0000-0003-2198-5788"),
+    ("Beatriz Machado", "UNIPAMPA", "0009-0002-2750-0323"),
+    ("Douglas Lautert", "UNIPAMPA", "0009-0005-9036-5453"),
+    ("Cristhian Kapelinski", "UNIPAMPA", "0009-0005-5750-022X"),
+    ("Diego Kreutz", "UNIPAMPA", "0000-0003-0830-0238"),
+    ("Isadora Garcia Ferrão", "UBO", "0000-0002-0612-486X"),
+    ("Alessandro Bof", "UNIPAMPA", "0000-0003-2198-5788"),
 ]
 # Strings the page scripts need (file checks, model switch, job polling).
 JS_KEYS = ("err_not_pdf", "err_too_big", "f_custom_id", "f_modelid", "f_served_local",
@@ -195,7 +195,7 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         return render(request, "index.html", {
             "scanner_labels": [scanner_view(s)["label"] for s in sorted(all_scanners())],
             "model_labels": [MODEL_LABELS.get(m, m) for m in models],
-            "team": [{"name": n, "affiliation": a, "role": r, "orcid": o} for n, a, r, o in TEAM],
+            "team": [{"name": n, "affiliation": a, "orcid": o} for n, a, o in TEAM],
         })
 
     @app.get("/app")

@@ -225,7 +225,6 @@ a.chip:hover .ic{color:var(--accent-h)}
 @media (max-width:520px){.team{grid-template-columns:1fr}}
 .person{display:flex;flex-direction:column;gap:.15rem;padding:1rem 1.1rem}
 .person b{font-weight:600;font-size:.95rem}
-.person .role{font-size:.84rem;color:var(--text2)}
 .person .aff{font:.72rem var(--mono);color:var(--muted);margin-top:.15rem}
 .person .orcid{margin-top:.55rem;align-self:flex-start;display:inline-flex;align-items:center;gap:.35rem;font:500 .72rem var(--mono);color:var(--muted);text-decoration:none}
 .person .orcid:hover{color:var(--text)}

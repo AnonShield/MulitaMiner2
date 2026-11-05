@@ -243,7 +243,6 @@
       {% for p in team %}
       <div class="card person">
         <b>{{ p.name }}</b>
-        <span class="role">{{ t['role_' ~ p.role] }}</span>
         <span class="aff">{{ p.affiliation }}</span>
         {% if p.orcid %}<a class="orcid" href="https://orcid.org/{{ p.orcid }}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-orcid"/></svg>{{ p.orcid }}</a>{% endif %}
       </div>
