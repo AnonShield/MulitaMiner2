@@ -151,53 +151,19 @@
     <p class="sub">{{ t.how_sub }}</p>
     <div class="stages" role="tablist" id="stages">
       <button class="stage" role="tab" aria-selected="true" data-i="0">
-        <svg viewBox="0 0 160 80">
-          <path d="M22 10h28l12 12v48H22z" class="blk"/><path d="M50 10v12h12" class="ln"/><text x="27" y="48" class="tx">PDF</text>
-          <path d="M72 40h18" class="ar"/><path d="M86 35l6 5-6 5" class="ar"/>
-          <path d="M100 20h48M100 32h40M100 44h48M100 56h30" class="ln2"/>
-        </svg>
+        <img class="fig" src="/static/stages/01-read.png?v={{ v }}" alt="" width="640" height="427">
         <div class="n">01</div><h3>{{ t.s1 }}</h3><p>{{ t.s1_t }}</p><i class="prog"></i></button>
       <button class="stage" role="tab" aria-selected="false" data-i="1">
-        <svg viewBox="0 0 160 80">
-          <path d="M12 12h44M12 20h36M12 28h44M12 40h40M12 48h44M12 60h44M12 68h30" class="ln2"/>
-          <path d="M6 34h56M6 54h56" class="cut"/>
-          <path d="M70 40h14" class="ar"/><path d="M78 35l6 5-6 5" class="ar"/>
-          <rect x="94" y="8" width="58" height="18" rx="3" class="blk on"/><text x="99" y="20" class="tx">#0</text><path d="M116 17h28" class="ln"/>
-          <rect x="94" y="31" width="58" height="18" rx="3" class="blk on"/><text x="99" y="43" class="tx">#1</text><path d="M116 40h22" class="ln"/>
-          <rect x="94" y="54" width="58" height="18" rx="3" class="blk on"/><text x="99" y="66" class="tx">#2</text><path d="M116 63h28" class="ln"/>
-        </svg>
+        <img class="fig" src="/static/stages/02-segment.png?v={{ v }}" alt="" width="640" height="427">
         <div class="n">02</div><h3>{{ t.s2 }}</h3><p>{{ t.s2_t }}</p><i class="prog"></i></button>
       <button class="stage" role="tab" aria-selected="false" data-i="2">
-        <svg viewBox="0 0 160 80">
-          <rect x="4" y="22" width="38" height="36" rx="3" class="blk"/><text x="8" y="32" class="tx">#0</text>
-          <path d="M8 40h28M8 47h20M8 54h26" class="ln"/>
-          <path d="M45 40h9" class="ar"/><path d="M50 35l5 5-5 5" class="ar"/>
-          <circle cx="70" cy="40" r="13" class="node"/><text x="70" y="43" text-anchor="middle" class="tx2">LLM</text>
-          <path d="M86 40h9" class="ar"/><path d="M91 35l5 5-5 5" class="ar"/>
-          <rect x="100" y="12" width="56" height="56" rx="3" class="blk on"/>
-          <text x="105" y="26" class="tx">cvss</text><text x="151" y="26" text-anchor="end" class="tv">7.5</text>
-          <text x="105" y="40" class="tx">port</text><text x="151" y="40" text-anchor="end" class="tv">25</text>
-          <text x="105" y="54" class="tx">sev</text><text x="151" y="54" text-anchor="end" class="tv">HIGH</text>
-        </svg>
+        <img class="fig" src="/static/stages/03-extract.png?v={{ v }}" alt="" width="640" height="427">
         <div class="n">03</div><h3>{{ t.s3 }}</h3><p>{{ t.s3_t }}</p><i class="prog"></i></button>
       <button class="stage" role="tab" aria-selected="false" data-i="3">
-        <svg viewBox="0 0 160 80">
-          <rect x="6" y="8" width="52" height="24" rx="3" class="blk"/><path d="M12 17h26" class="ln2"/><text x="12" y="29" class="tx">:80</text>
-          <rect x="6" y="48" width="52" height="24" rx="3" class="blk"/><path d="M12 57h26" class="ln2"/><text x="12" y="69" class="tx">:443</text>
-          <path d="M62 20C80 20 80 40 92 40M62 60C80 60 80 40 92 40" class="ar"/><path d="M88 35l6 5-6 5" class="ar"/>
-          <rect x="100" y="26" width="54" height="28" rx="3" class="blk on"/><path d="M106 36h26" class="ln2"/><text x="106" y="48" class="tx">:80, :443</text>
-        </svg>
+        <img class="fig" src="/static/stages/04-consolidate.png?v={{ v }}" alt="" width="640" height="427">
         <div class="n">04</div><h3>{{ t.s4 }}</h3><p>{{ t.s4_t }}</p><i class="prog"></i></button>
       <button class="stage" role="tab" aria-selected="false" data-i="4">
-        <svg viewBox="0 0 160 80">
-          <rect x="6" y="28" width="42" height="24" rx="3" class="blk on"/><path d="M12 37h26M12 45h18" class="ln2"/>
-          <path d="M52 40h14M66 40C80 40 80 12 94 12M66 40C80 40 80 26 94 26M66 40h28M66 40C80 40 80 54 94 54M66 40C80 40 80 68 94 68" class="ar"/>
-          <rect x="98" y="5" width="40" height="14" rx="7" class="tag"/><text x="106" y="15" class="tx">XLSX</text>
-          <rect x="98" y="19" width="40" height="14" rx="7" class="tag"/><text x="109" y="29" class="tx">CSV</text>
-          <rect x="98" y="33" width="40" height="14" rx="7" class="tag"/><text x="105" y="43" class="tx">SARIF</text>
-          <rect x="98" y="47" width="40" height="14" rx="7" class="tag"/><text x="106" y="57" class="tx">CSAF</text>
-          <rect x="98" y="61" width="40" height="14" rx="7" class="tag"/><text x="107" y="71" class="tx">CAIS</text>
-        </svg>
+        <img class="fig" src="/static/stages/05-export.png?v={{ v }}" alt="" width="640" height="427">
         <div class="n">05</div><h3>{{ t.s5 }}</h3><p>{{ t.s5_t }}</p><i class="prog"></i></button>
     </div>
     <div class="card stage-detail" id="stage-detail">

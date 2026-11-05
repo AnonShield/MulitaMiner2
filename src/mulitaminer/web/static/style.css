@@ -156,7 +156,7 @@ a.chip:hover .ic{color:var(--accent-h)}
 @media (max-width:860px){
   .stages{grid-template-columns:1fr;gap:.5rem}
   .stage{display:grid;grid-template-columns:108px 1fr;grid-template-rows:auto auto auto;column-gap:.9rem;align-items:center;padding:.7rem .8rem}
-  .stage svg{grid-row:1/4;margin:0;height:auto}
+  .stage svg,.stage img.fig{grid-row:1/4;margin:0;height:auto}
   .stage .n{grid-column:2}
   .stage h3{grid-column:2;margin:.1rem 0 0}
   .stage p{grid-column:2}
@@ -166,6 +166,7 @@ a.chip:hover .ic{color:var(--accent-h)}
 .stage[aria-selected=true]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px rgba(232,93,42,.25),0 12px 40px rgba(232,93,42,.12)}
 .stage svg,.stage-detail .fig svg{width:100%;height:auto;display:block;background:var(--bg);border-radius:var(--r-sm);padding:6px}
 .stage svg{margin-bottom:.7rem}
+.stage img.fig{width:100%;height:auto;display:block;border-radius:var(--r-sm);background:#f5efe2;margin-bottom:.7rem}
 .stage svg .ln,.fig svg .ln{stroke:var(--muted);stroke-width:2;stroke-linecap:round;fill:none}
 .stage svg .ln2,.fig svg .ln2{stroke:var(--text2);stroke-width:2.5;stroke-linecap:round;fill:none}
 .stage svg .cut,.fig svg .cut{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 4;fill:none}
