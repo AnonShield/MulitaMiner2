@@ -59,7 +59,9 @@ jobs:
         with:
           context: .
           push: true
-          build-args: INSTALL_WEB=${{ matrix.install_web }}
+          build-args: |
+            INSTALL_WEB=${{ matrix.install_web }}
+            GIT_SHA=${{ github.sha }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

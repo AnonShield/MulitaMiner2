@@ -8,7 +8,8 @@
     <p class="lead">{{ t.lead }}</p>
     <div class="actions">
       <a class="btn btn-primary btn-lg" href="/app">{{ t.cta_extract }}</a>
-      <a class="btn btn-ghost btn-lg" href="#how">{{ t.cta_how }}</a>
+      {% if example_ok %}<a class="btn btn-ghost btn-lg" href="/example">{{ t.cta_example }}</a>
+      {% else %}<a class="btn btn-ghost btn-lg" href="#how">{{ t.cta_how }}</a>{% endif %}
       <span class="fine">{{ t.fine.format(h=retention_h) }}</span>
     </div>
 
@@ -231,6 +232,53 @@
           <div class="links"><a href="https://doi.org/10.5753/sbseg_estendido.2026.29879" target="_blank" rel="noopener">{{ t.paper }} ↗</a><a href="https://huggingface.co/Inari18/mulita-extractor-qwen2.5-1.5b" target="_blank" rel="noopener">{{ t.model }} ↗</a></div>
         </div></div>
     </div>
+    <div class="cite">
+      <button type="button" class="btn btn-ghost" id="cite-btn" aria-expanded="false" aria-controls="cite">{{ t.cite_btn }}</button>
+      <div class="card citebox" id="cite" hidden>
+        <div class="citehead"><span class="kick">BibTeX</span><button type="button" class="btn btn-ghost" id="cite-copy" data-done="{{ t.cite_copied }}">{{ t.cite_copy }}</button></div>
+<pre id="cite-pre">{% raw %}@inproceedings{machado2025structured,
+  author    = {Beatriz Machado and Douglas Lautert and Cristhian Kapelinski and Diego Kreutz},
+  title     = {Structured Extraction of Vulnerabilities in OpenVAS and Tenable WAS Reports Using LLMs},
+  booktitle = {Anais da XXII Escola Regional de Redes de Computadores (ERRC)},
+  year      = {2025},
+  pages     = {144--150},
+  publisher = {SBC},
+  address   = {Porto Alegre, RS, Brasil},
+  doi       = {10.5753/errc.2025.17776}
+}
+
+@misc{lautert2026mulitaminer,
+  author    = {Douglas Lautert and Beatriz Machado and Cristhian Kapelinski and Diego Kreutz and Isadora Garcia Ferr{\~a}o},
+  title     = {MulitaMiner: Transforming Heterogeneous Technical Reports into Structured Data Using LLMs},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.19539374},
+  note      = {Preprint}
+}
+
+@inproceedings{machado2026mulitaminer,
+  author    = {Beatriz Machado and Douglas Lautert and Cristhian Kapelinski and Diego Kreutz and Isadora Garcia Ferr{\~a}o and Alessandro Bof},
+  title     = {MulitaMiner: A Multi-Version Evaluation of LLM-Based Vulnerability Report Extraction},
+  booktitle = {Anais do XXVI Simp{\'o}sio Brasileiro de Ciberseguran{\c{c}}a (SBSeg)},
+  year      = {2026},
+  pages     = {801--816},
+  publisher = {SBC},
+  address   = {Porto Alegre, RS, Brasil},
+  doi       = {10.5753/sbseg.2026.29054}
+}
+
+@inproceedings{machado2026onpremise,
+  author    = {Beatriz Machado and Cristhian Kapelinski and Diego Kreutz},
+  title     = {On-Premise vs. Cloud: Local LLMs for Vulnerability Extraction from Security Scanner Reports},
+  booktitle = {Anais Estendidos do XXVI Simp{\'o}sio Brasileiro de Ciberseguran{\c{c}}a (SBSeg)},
+  year      = {2026},
+  pages     = {601--612},
+  publisher = {SBC},
+  address   = {Porto Alegre, RS, Brasil},
+  doi       = {10.5753/sbseg_estendido.2026.29879}
+}{% endraw %}</pre>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -340,6 +388,21 @@
       }), {threshold: .4}).observe(demo);
     }
   }
+
+  // "How to cite": toggle the BibTeX block, copy it to the clipboard.
+  const citeBtn = document.getElementById('cite-btn'), citeBox = document.getElementById('cite');
+  citeBtn.addEventListener('click', () => {
+    citeBox.hidden = !citeBox.hidden; citeBtn.setAttribute('aria-expanded', citeBox.hidden ? 'false' : 'true');
+  });
+  const copyBtn = document.getElementById('cite-copy');
+  copyBtn.addEventListener('click', async () => {
+    const text = document.getElementById('cite-pre').textContent, label = copyBtn.textContent;
+    try { await navigator.clipboard.writeText(text); } catch (e) {
+      const r = document.createRange(); r.selectNodeContents(document.getElementById('cite-pre'));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy');
+    }
+    copyBtn.textContent = copyBtn.dataset.done; setTimeout(() => copyBtn.textContent = label, 1600);
+  });
 
   const stages = document.getElementById('stages');
   const tabs = [...stages.querySelectorAll('.stage')];

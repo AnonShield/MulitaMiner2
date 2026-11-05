@@ -1,16 +1,22 @@
 # Web interface
 
 A browser front end for `mulitaminer extract`: upload a scanner PDF, pick the
-scanner and the model, download the results. Jobs run in the background one
-at a time; the job page is a link you can close and come back to.
+scanner and the model, download the results. Jobs run in the background, a
+few at a time for cloud models (the work happens at the provider) and one at
+a time for local models (they share one GPU); the job page is a link you can
+close and come back to.
 
-Pages: `/` (what the tool is, how it works, the papers), `/app` (the form,
-with a guide explaining every field, including the custom-profile JSON),
-`/jobs/<token>` (status, live log, then downloads) and `/batch/<tokens>`
-(several PDFs submitted together: one job each, a zip per format of the
-finished ones). Every exporter runs at the end of a job, so the job page
-offers XLSX, CSV, JSON, SARIF, CSAF, DefectDojo and CAIS. The browser keeps
-its own list of the jobs it opened (localStorage) and shows it on `/app`.
+Pages: `/` (what the tool is, how it works, the papers, with a "how to cite"
+BibTeX block), `/app` (the form, with a guide explaining every field,
+including the custom-profile JSON), `/jobs/<token>` (status, live log, then
+downloads), `/batch/<tokens>` (several PDFs submitted together: one job each,
+a zip per format of the finished ones), `/example` (a precomputed finished
+job, see below) and `/privacy` (what the server stores, in plain words).
+Every exporter runs at the end of a job, so the job page offers XLSX, CSV,
+JSON, SARIF, CSAF, DefectDojo and CAIS. The browser keeps its own list of
+the jobs it opened (localStorage) and shows it on `/app`. The footer shows
+the package version and, in the published image, the commit it was built
+from.
 
 Design and rationale: [specs/2026-11-03-web-interface-design.md](specs/2026-11-03-web-interface-design.md).
 
@@ -67,7 +73,25 @@ All optional, read at startup:
 | `MULITAMINER_WEB_MAX_BATCH` | `10` | PDFs accepted in one submission; each becomes a job and a queue slot |
 | `MULITAMINER_WEB_RATE_PER_HOUR` | `10` | Submissions per client address per hour before HTTP 429 |
 | `MULITAMINER_WEB_ALLOW_PRIVATE_URLS` | unset | `1` lets a custom profile point at localhost or a private network (your own machine only; on the public site it is an SSRF vector) |
+| `MULITAMINER_WEB_WORKERS` | `3` | Jobs run at the same time. Local-model jobs are serialised regardless |
+| `MULITAMINER_WEB_EXAMPLE_DIR` | the package's `web/example` | Where the precomputed example lives (below) |
+| `MULITAMINER_WEB_BUILD` | unset | Commit shown in the footer; the Dockerfile sets it from the `GIT_SHA` build arg |
 | `MULITAMINER2_LLMS_DIR` | unset | Extra profiles, as for the CLI ([ADDING_A_MODEL.md](ADDING_A_MODEL.md)) |
+
+## The example page
+
+`/example` is a job page that was computed once and committed: a public
+sample report, its live log and every download, so a visitor sees the real
+output without a key and without waiting. Regenerate it after a change that
+alters the output (a prompt, an exporter, the schema):
+
+```bash
+uv run mulitaminer web-example resources/openvas/OpenVAS_JuiceShop.pdf -s openvas -m deepseek
+```
+
+That writes the downloads and `example.json` into `src/mulitaminer/web/example/`
+(the model's key comes from `.env`, as for `extract`). Without that folder
+the page answers 404 and the links to it disappear from the site.
 
 ## Custom model
 

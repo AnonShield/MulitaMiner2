@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}MulitaMiner · {{ t.pv_kick }}{% endblock %}
+{% block nav %}
+<a href="/">{{ t.nav_home }}</a>
+{% endblock %}
+{% block content %}
+<div class="jobwrap prose">
+  <div class="kick">{{ t.pv_kick }}</div>
+  <h1>{{ t.pv_h1 }}</h1>
+  <p class="sub">{{ t.pv_sub }} <a href="https://github.com/INARI18/MulitaMiner2/blob/main/docs/WEB.md#security-model" target="_blank" rel="noopener">docs/WEB.md ↗</a></p>
+  <section class="card">
+    <ul class="pv">
+      <li><b>{{ t.pv_1h }}</b>{{ t.pv_1.format(h=retention_h) }}</li>
+      <li><b>{{ t.pv_2h }}</b>{{ t.pv_2 }}</li>
+      <li><b>{{ t.pv_3h }}</b>{{ t.pv_3 }}</li>
+      <li><b>{{ t.pv_4h }}</b>{{ t.pv_4 }}</li>
+      <li><b>{{ t.pv_5h }}</b>{{ t.pv_5 }}</li>
+      <li><b>{{ t.pv_6h }}</b>{{ t.pv_6 }}</li>
+    </ul>
+    <p class="hint">{{ t.pv_foot }} <a href="https://github.com/INARI18/MulitaMiner2/issues" target="_blank" rel="noopener">GitHub ↗</a></p>
+  </section>
+</div>
+{% endblock %}

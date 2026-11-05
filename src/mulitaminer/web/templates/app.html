@@ -24,7 +24,7 @@
           </div>
           <div class="drop-file" hidden><span class="fname"></span><span class="fsize"></span></div>
         </div>
-        <p class="hint">{{ t.f_pdf_only }} {{ t.f_batch_hint }}</p>
+        <p class="hint">{{ t.f_pdf_only }} {{ t.f_batch_hint }}{% if example_ok %} <a href="/example">{{ t.app_example }}</a>{% endif %}</p>
         <p class="alert" id="file-err" hidden style="margin:.6rem 0 0"></p>
       </div>
 

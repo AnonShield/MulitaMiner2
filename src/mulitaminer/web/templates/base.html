@@ -68,12 +68,13 @@
       <div class="fbrand">
         <span class="word">Mulita<b>Miner</b></span>
         <p>{{ t.foot_tag }}</p>
-        <p class="fine">{{ t.foot_deleted.format(h=retention_h) }} · MIT</p>
+        <p class="fine">{{ t.foot_deleted.format(h=retention_h) }} · MIT · v{{ version }}{% if build %} · {{ build }}{% endif %}</p>
       </div>
       <div>
         <h4>{{ t.foot_product }}</h4>
         <a href="/app">{{ t.nav_launch }}</a>
         <a href="/#how">{{ t.nav_how }}</a>
+        <a href="/privacy">{{ t.foot_privacy }}</a>
         <a href="https://github.com/INARI18/MulitaMiner2/blob/main/docs/USAGE.md" target="_blank" rel="noopener">{{ t.foot_docs }}</a>
         <a href="https://github.com/INARI18/MulitaMiner2" target="_blank" rel="noopener">GitHub</a>
       </div>

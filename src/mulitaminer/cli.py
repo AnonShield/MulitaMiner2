@@ -441,5 +441,34 @@ def web(
                 forwarded_allow_ips="*" if proxy_headers else None)
 
 
+@app.command("web-example")
+def web_example(
+    report: Path = typer.Argument(..., exists=True, readable=True, help="A public scanner PDF"),
+    scanner: str = typer.Option(..., "--scanner", "-s", help="See `mulitaminer scanners`"),
+    model: str = typer.Option("deepseek", "--model", "-m", help="See `mulitaminer models`"),
+    output_dir: Path | None = typer.Option(
+        None, "--output-dir", help="Default: the web package's example folder"),
+) -> None:
+    """Precompute the finished job the web front end shows at /example (docs/WEB.md)."""
+    _setup_logging(False)
+    load_dotenv()
+    try:
+        from mulitaminer.web.jobs import EXAMPLE_DIR, build_example
+    except ImportError:
+        ui.error("the web front end is not installed: uv sync --group web")
+        raise typer.Exit(code=1)
+    if scanner not in all_scanners():
+        ui.error(f"unknown scanner {scanner!r}")
+        raise typer.Exit(code=1)
+    out = output_dir or EXAMPLE_DIR
+    try:
+        meta = build_example(report, scanner, model, out)
+    except (FatalLLMError, ValueError) as exc:
+        ui.error(exc)
+        raise typer.Exit(code=1)
+    ui.echo(f"{meta['records']} records from {meta['total_blocks']} blocks in "
+            f"{meta['duration_s']}s; ${meta['cost_usd']:.4f}. Example written to {out}")
+
+
 if __name__ == "__main__":
     app()

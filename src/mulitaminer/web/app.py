@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import io
 import json
 import os
@@ -18,8 +19,8 @@ from fastapi.templating import Jinja2Templates
 from mulitaminer.llm import ModelProfile, all_models
 from mulitaminer.scanner_engine import all_scanners
 from mulitaminer.web.i18n import LANGS, pick_lang, strings
-from mulitaminer.web.jobs import (DOWNLOADS, Cleaner, JobStore, RateLimit, Worker, custom_profile,
-                                  fernet, job_id)
+from mulitaminer.web.jobs import (DOWNLOADS, EXAMPLE_DIR, EXAMPLE_META, Cleaner, JobStore, RateLimit,
+                                  Worker, custom_profile, fernet, job_id)
 
 MEDIA = {".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
          ".csv": "text/csv", ".json": "application/json", ".sarif": "application/json"}
@@ -35,6 +36,10 @@ SECURITY_HEADERS = {
 
 HERE = Path(__file__).parent
 CUSTOM = "custom"
+try:
+    VERSION = importlib.metadata.version("mulitaminer")
+except importlib.metadata.PackageNotFoundError:
+    VERSION = "dev"
 # Cache-buster for /static URLs: changes whenever a static file changes, so a
 # browser never keeps an old stylesheet or logo across deployments.
 STATIC_V = hashlib.sha256(b"".join(
@@ -115,7 +120,8 @@ def scanner_view(key: str) -> dict:
 def create_app(data_dir: Path | None = None, models: list[str] | None = None,
                max_mb: float | None = None, retention_h: float | None = None,
                max_queue: int | None = None, allow_private: bool | None = None,
-               rate_per_hour: int | None = None) -> FastAPI:
+               rate_per_hour: int | None = None, workers: int | None = None,
+               example_dir: Path | None = None) -> FastAPI:
     # Default outside the project tree: on a dev machine the repo tends to live
     # under Documents, where desktop antivirus watches every write.
     data_dir = data_dir or Path(os.getenv("MULITAMINER_WEB_DATA", Path.home() / ".mulitaminer" / "web"))
@@ -133,12 +139,17 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
     # Submissions per client address per hour (behind Caddy, uvicorn's
     # --proxy-headers makes request.client the real address).
     rate = RateLimit(rate_per_hour or int(os.getenv("MULITAMINER_WEB_RATE_PER_HOUR", "10")))
+    # Jobs run concurrently (cloud models: the work happens at the provider);
+    # local-model jobs still go one at a time, see Worker.
+    workers = workers or int(os.getenv("MULITAMINER_WEB_WORKERS", "3"))
+    example_dir = example_dir or Path(os.getenv("MULITAMINER_WEB_EXAMPLE_DIR", EXAMPLE_DIR))
+    build = os.getenv("MULITAMINER_WEB_BUILD", "")[:7]   # the image's commit, set at build time
     unknown = [m for m in models if m not in all_models()]
     if unknown:
         raise ValueError(f"MULITAMINER_WEB_MODELS names unknown profile(s) {unknown}")
 
     store = JobStore(data_dir)
-    worker = Worker(store)
+    worker = Worker(store, workers)
     cleaner = Cleaner(store, retention_h)
 
     @asynccontextmanager
@@ -175,6 +186,8 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
                       for c, lbl in LANGS.items()],
             "retention_h": int(retention_h), "max_mb": max_bytes // (1024 * 1024),
             "v": STATIC_V, "site_url": str(request.base_url).rstrip("/"),
+            "version": VERSION, "build": build,
+            "example_ok": (example_dir / EXAMPLE_META).is_file(),
         }
         resp = templates.TemplateResponse(request, name, base | ctx, status_code=status_code)
         if request.query_params.get("lang") in LANGS:
@@ -201,6 +214,43 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
     @app.get("/app")
     def form(request: Request):
         return render(request, "app.html", form_context())
+
+    @app.get("/privacy")
+    def privacy(request: Request):
+        return render(request, "privacy.html", {})
+
+    def example_meta() -> dict:
+        path = example_dir / EXAMPLE_META
+        if not path.is_file():
+            raise HTTPException(404, "No example on this server.")
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    @app.get("/example")
+    def example_page(request: Request):
+        """A finished job, precomputed by `mulitaminer web-example`: the job
+        page and its downloads without running anything."""
+        m = example_meta()
+        job = {"id": "example", "status": "done", "stage": "", "name": m["name"],
+               "created_at": m["created_at"], "updated_at": m["created_at"], "queue_position": None,
+               "total_blocks": m["total_blocks"], "done_blocks": m["done_blocks"],
+               "records": m["records"], "duration_s": m["duration_s"], "cost_usd": m["cost_usd"],
+               "error": None, "scanner": m["scanner"], "model": m["model"],
+               "model_label": MODEL_LABELS.get(m["model"], m["model"]), "log": m.get("log", [])[-200:]}
+        return render(request, "job.html", {"job": job, "token": "example", "downloads": DOWNLOADS,
+                                            "dl": "/example/download", "example": True})
+
+    @app.get("/example/download/{fmt}")
+    def example_download(fmt: str):
+        m = example_meta()
+        if fmt not in DOWNLOADS:
+            raise HTTPException(404, "Unknown format.")
+        filename, _label = DOWNLOADS[fmt]
+        path = example_dir / filename
+        if not path.is_file():
+            raise HTTPException(404, "Not available.")
+        suffix = filename.split("results", 1)[1]
+        return Response(path.read_bytes(), media_type=MEDIA.get(Path(filename).suffix, "application/octet-stream"),
+                        headers={"Content-Disposition": f'attachment; filename="{m["scanner"]}-{m["name"]}{suffix}"'})
 
     @app.post("/jobs")
     async def submit(request: Request, report: list[UploadFile] = File(...),
@@ -325,7 +375,7 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
     def job_page(request: Request, token: str):
         job = job_or_404(token)
         return render(request, "job.html", {"job": status_payload(job, token), "token": token,
-                                            "downloads": DOWNLOADS})
+                                            "downloads": DOWNLOADS, "dl": f"/jobs/{token}/download"})
 
     @app.get("/api/jobs/{token}")
     def job_status(token: str):

@@ -359,6 +359,22 @@ input:read-only{color:var(--muted);background:var(--raised);cursor:not-allowed}
 .jobsteps li b{color:var(--text);font-weight:600}
 .jobsteps li.cur b{color:var(--accent)}
 
+.exnote{margin:.8rem 0 0;padding:.7rem .9rem;border:1px solid var(--accent-soft);background:var(--accent-soft);border-radius:var(--r-sm);color:var(--text2);font-size:.86rem}
+
+/* how to cite */
+.cite{margin-top:1.2rem}
+.citebox{margin-top:.8rem;padding:1rem 1.2rem}
+.citehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.citebox pre{margin:0;font:.74rem/1.5 var(--mono);color:var(--text2);white-space:pre-wrap;max-height:380px;overflow:auto}
+
+/* privacy page */
+.prose h1{font-size:1.9rem;font-weight:800;margin:.3rem 0 0}
+.prose .card{margin-top:1.2rem}
+.pv{list-style:none;margin:0;padding:0}
+.pv li{padding:.75rem 0;border-top:1px solid var(--border);color:var(--text2);font-size:.92rem}
+.pv li:first-child{border-top:0;padding-top:0}
+.pv b{display:block;color:var(--text);margin-bottom:.15rem}
+
 /* batch page */
 .blist{list-style:none;margin:1rem 0 0;padding:0;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
 .blist li{display:flex;align-items:center;gap:.7rem;padding:.6rem .9rem;border-top:1px solid var(--border);font-size:.9rem}

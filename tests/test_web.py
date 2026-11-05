@@ -193,14 +193,14 @@ def test_plaintext_never_written_to_data_dir(client, tmp_path, monkeypatch):
     assert not pdf.exists() and not run_dir.exists()   # the temp dir is gone with the job
 
 
-def test_jobs_run_one_at_a_time(tmp_path, monkeypatch):
+def test_jobs_queue_when_every_worker_is_busy(tmp_path, monkeypatch):
     gate = threading.Event()
 
     def slow_run(config, client=None, run_dir=None, doc=None, progress=None):
         gate.wait(5)
         return fake_run(config, client, run_dir, doc, progress)
     monkeypatch.setattr(jobs, "pipeline_run", slow_run)
-    with TestClient(create_app(data_dir=tmp_path, models=["deepseek"], rate_per_hour=1000)) as c:
+    with TestClient(create_app(data_dir=tmp_path, models=["deepseek"], rate_per_hour=1000, workers=1)) as c:
         first = token_of(submit(c))
         second = token_of(submit(c))
         time.sleep(0.2)
@@ -209,6 +209,59 @@ def test_jobs_run_one_at_a_time(tmp_path, monkeypatch):
         assert s2["status"] == "queued" and s2["queue_position"] == 0
         gate.set()
         assert wait_done(c, second)["status"] == "done"
+
+
+def test_cloud_jobs_run_in_parallel_but_local_ones_one_at_a_time(tmp_path, monkeypatch):
+    gate = threading.Event()
+
+    def slow_run(config, client=None, run_dir=None, doc=None, progress=None):
+        gate.wait(5)
+        return fake_run(config, client, run_dir, doc, progress)
+    monkeypatch.setattr(jobs, "pipeline_run", slow_run)
+    with TestClient(create_app(data_dir=tmp_path / "cloud", models=["deepseek"], rate_per_hour=1000, workers=2)) as c:
+        tokens = [token_of(submit(c)) for _ in range(2)]
+        time.sleep(0.2)
+        assert [c.get(f"/api/jobs/{t}").json()["status"] for t in tokens] == ["running", "running"]
+        gate.set()
+        for t in tokens:
+            assert wait_done(c, t)["status"] == "done"
+    gate.clear()
+    with TestClient(create_app(data_dir=tmp_path / "local", models=["qwen2.5-1.5b"], rate_per_hour=1000, workers=2)) as c:
+        tokens = [token_of(submit(c, model="qwen2.5-1.5b", api_key="")) for _ in range(2)]
+        time.sleep(0.2)
+        assert sorted(c.get(f"/api/jobs/{t}").json()["status"] for t in tokens) == ["queued", "running"]
+        gate.set()
+        for t in tokens:
+            assert wait_done(c, t)["status"] == "done"
+
+
+def test_example_page_serves_a_precomputed_job(tmp_path, monkeypatch):
+    monkeypatch.setattr(jobs, "pipeline_run", fake_run)
+    pdf = tmp_path / "OpenVAS_JuiceShop.pdf"
+    pdf.write_bytes(PDF)
+    example = tmp_path / "example"
+    meta = jobs.build_example(pdf, "openvas", "deepseek", example)
+    assert meta["records"] == 0 and meta["total_blocks"] == 3
+    assert any("Segmented 3 finding blocks" in line for line in meta["log"])
+    assert (example / jobs.EXAMPLE_META).is_file()
+    with TestClient(create_app(data_dir=tmp_path / "data", models=["deepseek"], example_dir=example)) as c:
+        page = c.get("/example")
+        assert page.status_code == 200 and "Precomputed example" in page.text
+        assert "Segmented 3 finding blocks" in page.text
+        assert 'href="/example"' in c.get("/").text and 'href="/example"' in c.get("/app").text
+        r = c.get("/example/download/xlsx")
+        assert r.status_code == 200 and r.content == FINDING
+        assert 'filename="openvas-OpenVAS_JuiceShop.xlsx"' in r.headers["content-disposition"]
+        assert c.get("/example/download/pdf").status_code == 404
+    with TestClient(create_app(data_dir=tmp_path / "data2", models=["deepseek"], example_dir=tmp_path / "none")) as c:
+        assert c.get("/example").status_code == 404
+        assert 'href="/example"' not in c.get("/").text
+
+
+def test_privacy_page_and_footer_version(client):
+    assert "What this demo stores" in client.get("/privacy").text
+    assert "Privacidade" in client.get("/privacy?lang=pt").text
+    assert "· v" in client.get("/").text
 
 
 def test_full_queue_answers_busy(tmp_path, monkeypatch):

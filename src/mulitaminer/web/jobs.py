@@ -1,4 +1,4 @@
-"""Extraction jobs: one directory each under the data dir, one worker thread.
+"""Extraction jobs: one directory each under the data dir, a few worker threads.
 
 Secrets never touch the disk. The API key lives only on the in-memory Job
 while it is queued or running. The job link carries a random token that is
@@ -8,6 +8,7 @@ the PDF and every result file at rest; the server keeps neither.
 from __future__ import annotations
 
 import base64
+import contextlib
 import hashlib
 import io
 import ipaddress
@@ -56,6 +57,10 @@ DOWNLOADS = {
 FORM_KEY_ENV = "WEB_FORM"
 ENC = ".enc"
 RESULTS = "results.tar" + ENC   # the whole run dir, one encrypted archive
+# The precomputed job shown at /example: its downloads plus this metadata file
+# (`mulitaminer web-example` writes them; docs/WEB.md).
+EXAMPLE_DIR = Path(__file__).parent / "example"
+EXAMPLE_META = "example.json"
 
 
 def _now() -> str:
@@ -275,37 +280,76 @@ class JobStore:
 
 
 class JobProgress(Progress):
-    """Routes pipeline events into the job's counters."""
+    """Routes pipeline events into the job's counters (and to disk, when the
+    job has a store)."""
 
-    def __init__(self, store: JobStore, job: Job):
+    def __init__(self, store: JobStore | None, job: Job):
         self.store, self.job = store, job
+
+    def _save(self) -> None:
+        if self.store is not None:
+            self.store.save(self.job)
 
     def stage(self, name: str) -> None:
         self.job.stage = name
-        self.store.save(self.job)
+        self._save()
 
     def segmented(self, total: int) -> None:
         self.job.total_blocks, self.job.stage = total, "extracting"
-        self.store.save(self.job)
+        self._save()
 
     def chunk_done(self, got: int, expected: int) -> None:
         self.job.done_blocks += got
-        self.store.save(self.job)
+        self._save()
+
+
+def build_example(pdf: Path, scanner: str, model: str, out_dir: Path,
+                  client: LLMClient | None = None) -> dict:
+    """Run one extraction and leave its downloads plus example.json in out_dir:
+    the finished job that /example shows without running anything."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    job = Job(id="example", scanner=scanner, model=model, profile_json=None, created_at=_now())
+    handler = JobLogHandler(job, threading.get_ident())
+    logging.getLogger().addHandler(handler)
+    logging.getLogger("mulitaminer").setLevel(logging.INFO)
+    try:
+        with tempfile.TemporaryDirectory(prefix="mulitaminer-example-") as tmp:
+            work = Path(tmp)
+            config = RunConfig(input_path=pdf, scanner=scanner, model=model,
+                               formats=EXPORTS, output_dir=work)
+            result, run_dir = pipeline_run(config, client=client, run_dir=work / "run",
+                                           progress=JobProgress(None, job))
+            for filename, _label in DOWNLOADS.values():
+                shutil.copyfile(run_dir / filename, out_dir / filename)
+    finally:
+        logging.getLogger().removeHandler(handler)
+    meta = {"name": safe_stem(pdf.name), "scanner": scanner, "model": model,
+            "created_at": job.created_at, "total_blocks": job.total_blocks,
+            "done_blocks": job.done_blocks, "records": len(result.records),
+            "duration_s": result.duration_s, "cost_usd": round(result.usage.cost_usd, 4),
+            "log": job.log}
+    (out_dir / EXAMPLE_META).write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    return meta
 
 
 class Worker:
-    """Runs queued jobs one at a time on a daemon thread."""
+    """Runs queued jobs on daemon threads: `workers` at a time for cloud
+    models, whose work happens at the provider, and one at a time for local
+    models, which share one GPU."""
 
-    def __init__(self, store: JobStore):
+    def __init__(self, store: JobStore, workers: int = 1):
         self.store = store
         self._queue: queue.Queue[str] = queue.Queue()
-        self._thread = threading.Thread(target=self._loop, daemon=True, name="mulita-web-worker")
+        self._threads = [threading.Thread(target=self._loop, daemon=True, name=f"mulita-web-worker-{i}")
+                         for i in range(max(1, workers))]
+        self._local = threading.Lock()
         # The CLI sets this through basicConfig; the server has no such setup,
         # and without it the pipeline's INFO lines (the live log) never reach a handler.
         logging.getLogger("mulitaminer").setLevel(logging.INFO)
 
     def start(self) -> None:
-        self._thread.start()
+        for thread in self._threads:
+            thread.start()
 
     def submit(self, job: Job) -> None:
         self._queue.put(job.id)
@@ -317,6 +361,11 @@ class Worker:
                 self._run(job)
 
     def _run(self, job: Job) -> None:
+        is_local = job.profile is not None and job.profile.is_local
+        with self._local if is_local else contextlib.nullcontext():
+            self._execute(job)
+
+    def _execute(self, job: Job) -> None:
         job.status, job.started_at = "running", _now()
         self.store.save(job)
         d = self.store.job_dir(job.id)

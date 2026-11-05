@@ -25,6 +25,9 @@ RUN if [ "$INSTALL_EVAL" = "true" ]; then \
 
 # The browser front end (docs/WEB.md) is opt-in the same way.
 ARG INSTALL_WEB=false
+# The commit the image was built from; the web footer shows it.
+ARG GIT_SHA=
+ENV MULITAMINER_WEB_BUILD=$GIT_SHA
 
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
