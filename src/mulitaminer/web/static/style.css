@@ -215,7 +215,7 @@ a.chip:hover .ic{color:var(--accent-h)}
 .tl .meta .now{color:var(--accent-h);text-transform:uppercase;font-size:.66rem}
 .tl h3{font-size:1.02rem;margin:.45rem 0 .35rem;font-weight:600}
 .tl p{margin:0;color:var(--text2);font-size:.86rem;max-width:78ch}
-.tl .links{margin-top:.6rem;display:flex;gap:1rem;font:500 .78rem var(--mono)}
+.tl .links{margin-top:.6rem;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem;font:500 .78rem var(--mono)}
 .tl .links a{text-decoration:none}
 .tl .links a:hover{text-decoration:underline}
 

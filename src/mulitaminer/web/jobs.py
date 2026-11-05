@@ -326,7 +326,8 @@ def build_example(pdf: Path, scanner: str, model: str, out_dir: Path,
             log_lines = [line.replace(str(work), ".") for line in job.log]
     finally:
         logging.getLogger().removeHandler(handler)
-    meta = {"name": safe_stem(pdf.name), "scanner": scanner, "model": model,
+    shutil.copyfile(pdf, out_dir / "input.pdf")   # visitors can download the input too
+    meta = {"name": safe_stem(pdf.name), "pdf": pdf.name, "scanner": scanner, "model": model,
             "created_at": job.created_at, "total_blocks": job.total_blocks,
             "done_blocks": job.done_blocks, "records": len(result.records),
             "duration_s": result.duration_s, "cost_usd": round(result.usage.cost_usd, 4),

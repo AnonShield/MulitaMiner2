@@ -1,5 +1,6 @@
 {
   "name": "OpenVAS_JuiceShop",
+  "pdf": "OpenVAS_JuiceShop.pdf",
   "scanner": "openvas",
   "model": "deepseek",
   "created_at": "2026-11-05T01:36:29+00:00",

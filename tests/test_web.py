@@ -253,6 +253,9 @@ def test_example_page_serves_a_precomputed_job(tmp_path, monkeypatch):
         assert r.status_code == 200 and r.content == FINDING
         assert 'filename="openvas-OpenVAS_JuiceShop.xlsx"' in r.headers["content-disposition"]
         assert c.get("/example/download/pdf").status_code == 404
+        r = c.get("/example/input.pdf")
+        assert r.status_code == 200 and r.content == PDF
+        assert 'filename="OpenVAS_JuiceShop.pdf"' in r.headers["content-disposition"]
     with TestClient(create_app(data_dir=tmp_path / "data2", models=["deepseek"], example_dir=tmp_path / "none")) as c:
         assert c.get("/example").status_code == 404
         assert 'href="/example"' not in c.get("/").text

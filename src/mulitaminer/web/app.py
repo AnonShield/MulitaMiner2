@@ -237,7 +237,17 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
                "error": None, "scanner": m["scanner"], "model": m["model"],
                "model_label": MODEL_LABELS.get(m["model"], m["model"]), "log": m.get("log", [])[-200:]}
         return render(request, "job.html", {"job": job, "token": "example", "downloads": DOWNLOADS,
-                                            "dl": "/example/download", "example": True})
+                                            "dl": "/example/download", "example": True,
+                                            "example_pdf": (example_dir / "input.pdf").is_file()})
+
+    @app.get("/example/input.pdf")
+    def example_pdf():
+        m = example_meta()
+        path = example_dir / "input.pdf"
+        if not path.is_file():
+            raise HTTPException(404, "Not available.")
+        return Response(path.read_bytes(), media_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="{m.get("pdf", "report.pdf")}"'})
 
     @app.get("/example/download/{fmt}")
     def example_download(fmt: str):

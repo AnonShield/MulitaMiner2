@@ -41,6 +41,7 @@
       <a class="btn btn-primary" href="{{ dl }}/xlsx">{{ t.dl }} XLSX</a>
       <a class="btn btn-primary" href="{{ dl }}/csv">{{ t.dl }} CSV</a>
       <a class="btn btn-primary" href="{{ dl }}/json">{{ t.dl }} JSON</a>
+      {% if example_pdf %}<a class="btn btn-ghost" href="/example/input.pdf">{{ t.ex_pdf }}</a>{% endif %}
       <a class="btn btn-ghost" href="/app">{% if example %}{{ t.cta_extract }}{% else %}{{ t.j_another }}{% endif %}</a>
     </div>
     <p class="lb" style="margin-top:1.3rem">{{ t.j_also }}</p>
