@@ -321,13 +321,16 @@ def build_example(pdf: Path, scanner: str, model: str, out_dir: Path,
                                            progress=JobProgress(None, job))
             for filename, _label in DOWNLOADS.values():
                 shutil.copyfile(run_dir / filename, out_dir / filename)
+            # The writers log absolute paths; the example is public, so no
+            # temp dir (and no user name) from the machine that built it.
+            log_lines = [line.replace(str(work), ".") for line in job.log]
     finally:
         logging.getLogger().removeHandler(handler)
     meta = {"name": safe_stem(pdf.name), "scanner": scanner, "model": model,
             "created_at": job.created_at, "total_blocks": job.total_blocks,
             "done_blocks": job.done_blocks, "records": len(result.records),
             "duration_s": result.duration_s, "cost_usd": round(result.usage.cost_usd, 4),
-            "log": job.log}
+            "log": log_lines}
     (out_dir / EXAMPLE_META).write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return meta
 

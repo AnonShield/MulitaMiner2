@@ -361,11 +361,14 @@ input:read-only{color:var(--muted);background:var(--raised);cursor:not-allowed}
 
 .exnote{margin:.8rem 0 0;padding:.7rem .9rem;border:1px solid var(--accent-soft);background:var(--accent-soft);border-radius:var(--r-sm);color:var(--text2);font-size:.86rem}
 
-/* how to cite */
-.cite{margin-top:1.2rem}
-.citebox{margin-top:.8rem;padding:1rem 1.2rem}
-.citehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
-.citebox pre{margin:0;font:.74rem/1.5 var(--mono);color:var(--text2);white-space:pre-wrap;max-height:380px;overflow:auto}
+/* cite: a button at the end of each paper card opens the BibTeX in a modal */
+.tl .links .cite-btn{margin-left:auto;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:999px;padding:.2rem .7rem;font:500 .74rem var(--mono);cursor:pointer}
+.tl .links .cite-btn:hover{color:var(--text);border-color:var(--text2)}
+.cite-dialog{width:min(680px,100% - 32px);padding:1.2rem 1.4rem;border:1px solid var(--border2);border-radius:var(--r-lg);background:var(--raised);color:var(--text);box-shadow:0 24px 80px rgba(0,0,0,.45)}
+.cite-dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
+.citehead{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:.8rem}
+.citehead h3{font-size:1rem;margin-top:.3rem}
+.cite-dialog pre{margin:0 0 1rem;padding:.8rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);font:.74rem/1.5 var(--mono);color:var(--text2);white-space:pre-wrap;max-height:50vh;overflow:auto}
 
 /* privacy page */
 .prose h1{font-size:1.9rem;font-weight:800;margin:.3rem 0 0}

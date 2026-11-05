@@ -1,0 +1,1373 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "MulitaMiner",
+          "version": "2.0.0a1",
+          "informationUri": "https://github.com/INARI18/MulitaMiner2",
+          "rules": [
+            {
+              "id": "OPENVAS-SMTP-too-long-line",
+              "name": "SMTP too long line",
+              "shortDescription": {
+                "text": "SMTP too long line"
+              },
+              "help": {
+                "text": "Solution type: VendorFix\nContact the vendor of the antivirus scanner to get an update."
+              },
+              "properties": {
+                "security-severity": "7.5",
+                "tags": [
+                  "security"
+                ]
+              }
+            },
+            {
+              "id": "OPENVAS-OpenVAS-Greenbone-Vulnerability-Manager-Default-Credentials",
+              "name": "OpenVAS / Greenbone Vulnerability Manager Default Credentials",
+              "shortDescription": {
+                "text": "OpenVAS / Greenbone Vulnerability Manager Default Credentials"
+              },
+              "help": {
+                "text": "Solution type: Workaround\nChange the password of the mentioned account(s)."
+              },
+              "properties": {
+                "security-severity": "10.0",
+                "tags": [
+                  "security"
+                ]
+              }
+            },
+            {
+              "id": "OPENVAS-SSL-TLS-Certificate-Expired",
+              "name": "SSL/TLS: Certificate Expired",
+              "shortDescription": {
+                "text": "SSL/TLS: Certificate Expired"
+              },
+              "help": {
+                "text": "Solution type: Mitigation\nReplace the SSL/TLS certificate by a new one."
+              },
+              "properties": {
+                "security-severity": "5.0",
+                "tags": [
+                  "security"
+                ]
+              }
+            },
+            {
+              "id": "OPENVAS-Check-if-Mailserver-answer-to-VRFY-and-EXPN-requests",
+              "name": "Check if Mailserver answer to VRFY and EXPN requests",
+              "shortDescription": {
+                "text": "Check if Mailserver answer to VRFY and EXPN requests"
+              },
+              "help": {
+                "text": "Solution type: Workaround\nDisable VRFY and/or EXPN on your Mailserver.\nFor postfix add 'disable_vrfy_command=yes' in 'main.cf'.\nFor Sendmail add the option 'O PrivacyOptions=goaway'.\nIt is suggested that, if you really want to publish this type of information, you use a mechanism that legitimate users actually know about, such as Finger or HTTP."
+              },
+              "properties": {
+                "security-severity": "5.0",
+                "tags": [
+                  "security"
+                ]
+              }
+            },
+            {
+              "id": "OPENVAS-CGI-Scanning-Consolidation",
+              "name": "CGI Scanning Consolidation",
+              "shortDescription": {
+                "text": "CGI Scanning Consolidation"
+              }
+            },
+            {
+              "id": "OPENVAS-Greenbone-Security-Assistant-GSA-Detection",
+              "name": "Greenbone Security Assistant (GSA) Detection",
+              "shortDescription": {
+                "text": "Greenbone Security Assistant (GSA) Detection"
+              }
+            },
+            {
+              "id": "OPENVAS-HTTP-Security-Headers-Detection",
+              "name": "HTTP Security Headers Detection",
+              "shortDescription": {
+                "text": "HTTP Security Headers Detection"
+              }
+            },
+            {
+              "id": "OPENVAS-Services",
+              "name": "Services",
+              "shortDescription": {
+                "text": "Services"
+              }
+            },
+            {
+              "id": "OPENVAS-SSL-TLS-Collect-and-Report-Certificate-Details",
+              "name": "SSL/TLS: Collect and Report Certificate Details",
+              "shortDescription": {
+                "text": "SSL/TLS: Collect and Report Certificate Details"
+              }
+            },
+            {
+              "id": "OPENVAS-SSL-TLS-HTTP-Public-Key-Pinning-HPKP-Missing",
+              "name": "SSL/TLS: HTTP Public Key Pinning (HPKP) Missing",
+              "shortDescription": {
+                "text": "SSL/TLS: HTTP Public Key Pinning (HPKP) Missing"
+              },
+              "help": {
+                "text": "Solution type: Workaround\nEnable HPKP or add / configure the required directives correctly following the guides linked in the references."
+              }
+            },
+            {
+              "id": "OPENVAS-SSL-TLS-HTTP-Strict-Transport-Security-HSTS-Missing",
+              "name": "SSL/TLS: HTTP Strict Transport Security (HSTS) Missing",
+              "shortDescription": {
+                "text": "SSL/TLS: HTTP Strict Transport Security (HSTS) Missing"
+              },
+              "help": {
+                "text": "Solution type: Workaround\nEnable HSTS or add / configure the required directives correctly following the guides linked in the references."
+              }
+            },
+            {
+              "id": "OPENVAS-SSL-TLS-Perfect-Forward-Secrecy-Cipher-Suites-Missing",
+              "name": "SSL/TLS: Perfect Forward Secrecy Cipher Suites Missing",
+              "shortDescription": {
+                "text": "SSL/TLS: Perfect Forward Secrecy Cipher Suites Missing"
+              }
+            },
+            {
+              "id": "OPENVAS-SSL-TLS-Report-Medium-Cipher-Suites",
+              "name": "SSL/TLS: Report Medium Cipher Suites",
+              "shortDescription": {
+                "text": "SSL/TLS: Report Medium Cipher Suites"
+              }
+            },
+            {
+              "id": "OPENVAS-SSL-TLS-Report-Non-Weak-Cipher-Suites",
+              "name": "SSL/TLS: Report Non Weak Cipher Suites",
+              "shortDescription": {
+                "text": "SSL/TLS: Report Non Weak Cipher Suites"
+              }
+            },
+            {
+              "id": "OPENVAS-SSL-TLS-Report-Supported-Cipher-Suites",
+              "name": "SSL/TLS: Report Supported Cipher Suites",
+              "shortDescription": {
+                "text": "SSL/TLS: Report Supported Cipher Suites"
+              }
+            },
+            {
+              "id": "OPENVAS-wapiti-NASL-wrapper",
+              "name": "wapiti (NASL wrapper)",
+              "shortDescription": {
+                "text": "wapiti (NASL wrapper)"
+              }
+            },
+            {
+              "id": "OPENVAS-Postfix-SMTP-Server-Detection",
+              "name": "Postfix SMTP Server Detection",
+              "shortDescription": {
+                "text": "Postfix SMTP Server Detection"
+              }
+            },
+            {
+              "id": "OPENVAS-SMTP-antivirus-scanner-DoS",
+              "name": "SMTP antivirus scanner DoS",
+              "shortDescription": {
+                "text": "SMTP antivirus scanner DoS"
+              },
+              "help": {
+                "text": "Solution type: Mitigation\nReconfigure your antivirus / upgrade it."
+              },
+              "properties": {
+                "security-severity": "7.2",
+                "tags": [
+                  "security"
+                ]
+              }
+            },
+            {
+              "id": "OPENVAS-SMTP-Missing-Support-For-STARTTLS",
+              "name": "SMTP Missing Support For STARTTLS",
+              "shortDescription": {
+                "text": "SMTP Missing Support For STARTTLS"
+              }
+            },
+            {
+              "id": "OPENVAS-SMTP-Server-type-and-version",
+              "name": "SMTP Server type and version",
+              "shortDescription": {
+                "text": "SMTP Server type and version"
+              }
+            },
+            {
+              "id": "OPENVAS-OpenVAS-Greenbone-Vulnerability-Manager-Detection",
+              "name": "OpenVAS / Greenbone Vulnerability Manager Detection",
+              "shortDescription": {
+                "text": "OpenVAS / Greenbone Vulnerability Manager Detection"
+              }
+            },
+            {
+              "id": "OPENVAS-Service-Detection-with-xml-Request",
+              "name": "Service Detection with '<xml/>' Request",
+              "shortDescription": {
+                "text": "Service Detection with '<xml/>' Request"
+              }
+            },
+            {
+              "id": "OPENVAS-CPE-Inventory",
+              "name": "CPE Inventory",
+              "shortDescription": {
+                "text": "CPE Inventory"
+              }
+            },
+            {
+              "id": "OPENVAS-OS-Detection-Consolidation-and-Reporting",
+              "name": "OS Detection Consolidation and Reporting",
+              "shortDescription": {
+                "text": "OS Detection Consolidation and Reporting"
+              }
+            },
+            {
+              "id": "OPENVAS-Traceroute",
+              "name": "Traceroute",
+              "shortDescription": {
+                "text": "Traceroute"
+              },
+              "help": {
+                "text": "Block unwanted packets from escaping your network."
+              }
+            }
+          ]
+        }
+      },
+      "automationDetails": {
+        "id": "mulitaminer/openvas/"
+      },
+      "results": [
+        {
+          "ruleId": "OPENVAS-SMTP-too-long-line",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "Some antivirus scanners dies when they process an email with a too long string without line breaks.\nSuch a message was sent. If there is an antivirus on your MTA, it might have crashed. Please check its status right now, as it is not possible to do it remotely."
+          },
+          "properties": {
+            "severity": "HIGH",
+            "cvss": 7.5,
+            "source": "OPENVAS",
+            "port": 25,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:25",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-OpenVAS-Greenbone-Vulnerability-Manager-Default-Credentials",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "The remote OpenVAS / Greenbone Vulnerability Manager is installed/configured in a way that it has account(s) with default passwords enabled."
+          },
+          "properties": {
+            "severity": "HIGH",
+            "cvss": 10.0,
+            "source": "OPENVAS",
+            "port": 9390,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:9390",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Certificate-Expired",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "The remote server's SSL/TLS certificate has already expired."
+          },
+          "properties": {
+            "severity": "MEDIUM",
+            "cvss": 5.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-Check-if-Mailserver-answer-to-VRFY-and-EXPN-requests",
+          "ruleIndex": 3,
+          "level": "warning",
+          "message": {
+            "text": "The Mailserver on this host answers to VRFY and/or EXPN requests."
+          },
+          "properties": {
+            "severity": "MEDIUM",
+            "cvss": 5.0,
+            "source": "OPENVAS",
+            "port": 25,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:25",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Certificate-Expired",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "The remote server's SSL/TLS certificate has already expired."
+          },
+          "properties": {
+            "severity": "MEDIUM",
+            "cvss": 5.0,
+            "source": "OPENVAS",
+            "port": 9390,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:9390",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-CGI-Scanning-Consolidation",
+          "ruleIndex": 4,
+          "level": "note",
+          "message": {
+            "text": "The script consolidates various information for CGI scanning.\nThis information is based on the following scripts / settings:\n- HTTP-Version Detection (OID: 1.3.6.1.4.1.25623.1.0.100034)\n- No 404 check (OID: 1.3.6.1.4.1.25623.1.0.10386)\n- Web mirroring / webmirror.nasl (OID: 1.3.6.1.4.1.25623.1.0.10662)\n- Directory Scanner / DDI_Directory_Scanner.nasl (OID: 1.3.6.1.4.1.25623.1.0.11032)\n- The configured 'cgi_path' within the 'Scanner Preferences' of the scan config in use\n- The configured 'Enable CGI scanning', 'Enable generic web application scanning' and 'Add historic /scripts and /cgi-bin to directories for CGI scanning' within the 'Global variable settings' of the scan config in use\nIf you think any of this information is wrong please report it to the referenced community portal."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-Greenbone-Security-Assistant-GSA-Detection",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "The script sends a connection request to the server and attempts to determine if it is a GSA from the reply."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-HTTP-Security-Headers-Detection",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "All known security headers are being checked on the host. On completion a report will hand back whether a specific security header has been implemented (including its value) or is missing on the target."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-Services",
+          "ruleIndex": 7,
+          "level": "note",
+          "message": {
+            "text": "This routine attempts to guess which service is running on the remote ports. For instance, it searches for a web server which could listen on another port than 80 or 443 and makes this information available for other check routines."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-Services",
+          "ruleIndex": 7,
+          "level": "note",
+          "message": {
+            "text": "This routine attempts to guess which service is running on the remote ports. For instance, it searches for a web server which could listen on another port than 80 or 443 and makes this information available for other check routines."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Collect-and-Report-Certificate-Details",
+          "ruleIndex": 8,
+          "level": "note",
+          "message": {
+            "text": "This script collects and reports the details of all SSL/TLS certificates.\nThis data will be used by other tests to verify server certificates."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-HTTP-Public-Key-Pinning-HPKP-Missing",
+          "ruleIndex": 9,
+          "level": "note",
+          "message": {
+            "text": "The remote web server is not enforcing HPKP."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-HTTP-Strict-Transport-Security-HSTS-Missing",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "The remote web server is not enforcing HSTS."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Perfect-Forward-Secrecy-Cipher-Suites-Missing",
+          "ruleIndex": 11,
+          "level": "note",
+          "message": {
+            "text": "The remote service is missing support for SSL/TLS cipher suites supporting Perfect Forward Secrecy."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Report-Medium-Cipher-Suites",
+          "ruleIndex": 12,
+          "level": "note",
+          "message": {
+            "text": "This routine reports all Medium SSL/TLS cipher suites accepted by a service."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Report-Non-Weak-Cipher-Suites",
+          "ruleIndex": 13,
+          "level": "note",
+          "message": {
+            "text": "This routine reports all Non Weak SSL/TLS cipher suites accepted by a service."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Report-Supported-Cipher-Suites",
+          "ruleIndex": 14,
+          "level": "note",
+          "message": {
+            "text": "This routine reports all SSL/TLS cipher suites accepted by a service.\nAs the NVT 'SSL/TLS: Check Supported Cipher Suites' (OID: 1.3.6.1.4.1.25623.1.0.900234) might run into a timeout the actual reporting of all accepted cipher suites takes place in this NVT instead. The script preference 'Report timeout' allows you to configure if such an timeout is reported."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-wapiti-NASL-wrapper",
+          "ruleIndex": 15,
+          "level": "note",
+          "message": {
+            "text": "This plugin uses wapiti to find web security issues.\nMake sure to have wapiti 2.x as wapiti 1.x is not supported.\nSee the preferences section for wapiti options.\nNote that the scanner is using limited set of wapiti options. Therefore, for more complete web assessment, you should use standalone wapiti tool for deeper/customized checks.\nNote: The plugin needs the 'wapiti' binary found within the PATH of the user running the scanner and needs to be executable for this user. The existence of this binary is checked and reported separately within 'Availability of scanner helper tools' (OID: 1.3.6.1.4.1.25623.1.0.810000)."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 443,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:443",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-Postfix-SMTP-Server-Detection",
+          "ruleIndex": 16,
+          "level": "note",
+          "message": {
+            "text": "The script checks the SMTP server banner for the presence of Postfix."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 25,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:25",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-Services",
+          "ruleIndex": 7,
+          "level": "note",
+          "message": {
+            "text": "This routine attempts to guess which service is running on the remote ports. For instance, it searches for a web server which could listen on another port than 80 or 443 and makes this information available for other check routines."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 25,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:25",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SMTP-antivirus-scanner-DoS",
+          "ruleIndex": 17,
+          "level": "note",
+          "message": {
+            "text": "This script sends the 42.zip recursive archive to the mail server. If there is an antivirus filter, it may start eating huge amounts of CPU or memory."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 7.2,
+            "source": "OPENVAS",
+            "port": 25,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:25",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SMTP-Missing-Support-For-STARTTLS",
+          "ruleIndex": 18,
+          "level": "note",
+          "message": {
+            "text": "The remote SMTP server does not support the 'STARTTLS' command."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 25,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:25",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SMTP-Server-type-and-version",
+          "ruleIndex": 19,
+          "level": "note",
+          "message": {
+            "text": "This detects the SMTP Server's type and version by connecting to the server and processing the buffer received."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 25,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:25",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-OpenVAS-Greenbone-Vulnerability-Manager-Detection",
+          "ruleIndex": 20,
+          "level": "note",
+          "message": {
+            "text": "The script sends a connection request to the server and attempts to determine if it is a OpenVAS Manager (openvasmd) or Greebone Vulnerability Manager (gmvd)."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 9390,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:9390",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-Service-Detection-with-xml-Request",
+          "ruleIndex": 21,
+          "level": "note",
+          "message": {
+            "text": "This plugin performs service detection.\nThis plugin is a complement of find_service.nasl. It sends a '<xml/>' request to the remaining unknown services and tries to identify them."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 9390,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:9390",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-Services",
+          "ruleIndex": 7,
+          "level": "note",
+          "message": {
+            "text": "This routine attempts to guess which service is running on the remote ports. For instance, it searches for a web server which could listen on another port than 80 or 443 and makes this information available for other check routines."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 9390,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:9390",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Collect-and-Report-Certificate-Details",
+          "ruleIndex": 8,
+          "level": "note",
+          "message": {
+            "text": "This script collects and reports the details of all SSL/TLS certificates.\nThis data will be used by other tests to verify server certificates."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 9390,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:9390",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Perfect-Forward-Secrecy-Cipher-Suites-Missing",
+          "ruleIndex": 11,
+          "level": "note",
+          "message": {
+            "text": "The remote service is missing support for SSL/TLS cipher suites supporting Perfect Forward Secrecy."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 9390,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:9390",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Report-Medium-Cipher-Suites",
+          "ruleIndex": 12,
+          "level": "note",
+          "message": {
+            "text": "This routine reports all Medium SSL/TLS cipher suites accepted by a service."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 9390,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:9390",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Report-Non-Weak-Cipher-Suites",
+          "ruleIndex": 13,
+          "level": "note",
+          "message": {
+            "text": "This routine reports all Non Weak SSL/TLS cipher suites accepted by a service."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 9390,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:9390",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-SSL-TLS-Report-Supported-Cipher-Suites",
+          "ruleIndex": 14,
+          "level": "note",
+          "message": {
+            "text": "This routine reports all SSL/TLS cipher suites accepted by a service.\nAs the NVT 'SSL/TLS: Check Supported Cipher Suites' (OID: 1.3.6.1.4.1.25623.1.0.900234) might run into a timeout the actual reporting of all accepted cipher suites takes place in this NVT instead. The script preference 'Report timeout' allows you to configure if such an timeout is reported."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": 9390,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1:9390",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-CPE-Inventory",
+          "ruleIndex": 22,
+          "level": "note",
+          "message": {
+            "text": "This routine uses information collected by other routines about CPE identities of operating systems, services and applications detected during the scan."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": null,
+            "protocol": null
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-OS-Detection-Consolidation-and-Reporting",
+          "ruleIndex": 23,
+          "level": "note",
+          "message": {
+            "text": "This script consolidates the OS information detected by several NVTs and tries to find the best matching OS. Furthermore it reports all previously collected information leading to this best matching OS. It also reports possible additional information which might help to improve the OS detection. If any of this information is wrong or could be improved please consider to report these to the referenced community portal."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": null,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "OPENVAS-Traceroute",
+          "ruleIndex": 24,
+          "level": "note",
+          "message": {
+            "text": "A traceroute from the scanning server to the target system was conducted. This traceroute is provided primarily for informational value only. In the vast majority of cases, it does not represent a vulnerability. However, if the displayed traceroute contains any private addresses that should not have been publicly visible, then you have an issue you need to correct."
+          },
+          "properties": {
+            "severity": "LOG",
+            "cvss": 0.0,
+            "source": "OPENVAS",
+            "port": null,
+            "protocol": "tcp"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "127.0.0.1"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "127.0.0.1",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
