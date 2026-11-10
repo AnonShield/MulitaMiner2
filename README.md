@@ -31,6 +31,10 @@ ranks findings into a KEV/EPSS/SSVC remediation queue, and ships a
 schema-driven evaluation subsystem that scores extraction quality against
 ground-truth baselines.
 
+**Try it online:** <https://mulitaminer.anonshield.org>. Upload a report and
+extract with a cloud model and your own API key, or open the sample result
+(no key needed) to see what comes out.
+
 ## Pipeline
 
 ![MulitaMiner pipeline](docs/imgs/pipeline.svg)
@@ -180,7 +184,8 @@ uv sync --group web && uv run mulitaminer web                                  #
 docker compose -f docker-compose.yml -f docker-compose.web.yml up web          # from a clone, with the local model on Ollama
 ```
 
-Open <http://localhost:8000>.
+Open <http://localhost:8000>. The same front end runs publicly at
+<https://mulitaminer.anonshield.org> (cloud models only).
 
 ## Evaluation and experiments
 
