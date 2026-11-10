@@ -146,27 +146,32 @@ a WAF would be the place for that); the operator is trusted while a job runs.
 The honest advice to users is on the form: use a key with a spending limit,
 and pseudonymize the report first if it is sensitive.
 
-## Public deployment (behind Caddy)
+## Public deployment (mulita.anonshield.org)
 
-`docker-compose.prod.yml` runs the web app alone, cloud models only, with no
-published port. It joins the Docker network of the Caddy that already serves
-the AnonShield domains, and Caddy proxies the subdomain to it.
+`docker-compose.prod.yml` runs the web app alone, cloud models only, published
+on the server's loopback (`127.0.0.1:18090`). The host's Caddy terminates TLS
+and proxies the name to that port; Cloudflare sits in front of the host through
+a tunnel (the `cloudflared` connector on the same machine), so the name also
+needs an ingress entry in that tunnel.
 
-On the server:
+On the server, as a user in the `docker` group:
 
 ```bash
-git clone https://github.com/INARI18/MulitaMiner2.git && cd MulitaMiner2
-CADDY_NETWORK=<network of the caddy container> docker compose -f docker-compose.prod.yml up -d --build
+git clone https://github.com/AnonShield/MulitaMiner2.git && cd MulitaMiner2
+docker-compose -f docker-compose.prod.yml up -d --build
+curl -s http://127.0.0.1:18090/api/health   # {"status":"ok"}
 ```
 
-`docker network ls` shows the candidates; `docker inspect <caddy container>`
-confirms which one it is on.
+Updating is `git pull` and the same `up -d --build`. `MULITAMINER_WEB_PORT`
+changes the loopback port.
 
-Caddyfile block (the body limit must cover the upload limit; Caddy's default
-for the other sites is 1 MB):
+Host Caddy block (`/etc/caddy/Caddyfile`, root), next to the other
+AnonShield names and importing the same access snippet they use (the body
+limit must cover the upload limit; Caddy's default is 1 MB):
 
 ```
 mulita.anonshield.org {
+    import somente_cloudflare
     request_body {
         max_size 20MB
     }
@@ -174,7 +179,7 @@ mulita.anonshield.org {
     log {
         output discard
     }
-    reverse_proxy mulitaminer-web:8000 {
+    reverse_proxy 127.0.0.1:18090 {
         # Overwrite, do not append: the app's rate limit reads the first
         # address in this header, so a client must not be able to plant one.
         header_up X-Forwarded-For {remote_host}
@@ -182,8 +187,9 @@ mulita.anonshield.org {
 }
 ```
 
-Reload Caddy (`docker exec <caddy> caddy reload --config /etc/caddy/Caddyfile`)
-and the site is up with HTTPS from Let's Encrypt.
+Then `sudo systemctl reload caddy`. In Cloudflare: a proxied DNS record for
+`mulita.anonshield.org` and, in the tunnel's ingress, `mulita.anonshield.org`
+to `https://127.0.0.1:443` with the name as SNI, like the other sites.
 
 Resource limits in the compose file (1.5 CPU, 2 GB) follow AnonShield's
 sandbox convention; the app itself is light, the work happens at the

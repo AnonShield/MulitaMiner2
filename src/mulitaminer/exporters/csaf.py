@@ -124,7 +124,7 @@ def to_csaf(records: list[VulnRecord], record_type: type[VulnRecord], out_dir: P
             "publisher": {
                 "category": "other",
                 "name": "MulitaMiner",
-                "namespace": "https://github.com/INARI18/MulitaMiner2",
+                "namespace": "https://github.com/AnonShield/MulitaMiner2",
             },
             "title": "MulitaMiner scan findings",
             "tracking": {

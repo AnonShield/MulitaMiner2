@@ -97,7 +97,7 @@ def to_sarif(records: list[VulnRecord], record_type: type[VulnRecord], out_dir: 
                     "driver": {
                         "name": "MulitaMiner",
                         "version": __version__,
-                        "informationUri": "https://github.com/INARI18/MulitaMiner2",
+                        "informationUri": "https://github.com/AnonShield/MulitaMiner2",
                         "rules": list(rules.values()),
                     }
                 },

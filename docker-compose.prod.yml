@@ -1,8 +1,11 @@
-# Public demo: the web app alone, cloud models only, behind the AnonShield
-# Caddy (docs/WEB.md has the Caddyfile block). No Ollama, no published port:
-# Caddy reaches `mulitaminer-web:8000` over the shared Docker network.
+# Public demo: the web app alone, cloud models only, published on loopback for
+# the host's reverse proxy (docs/WEB.md has the Caddy block). No Ollama.
 #
-#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker-compose -f docker-compose.prod.yml up -d --build
+#
+# MULITAMINER_WEB_PORT picks the loopback port (default 18090). Format 3.7:
+# the server's docker-compose is 1.25.
+version: "3.7"
 
 services:
   web:
@@ -11,8 +14,8 @@ services:
       context: .
       args:
         INSTALL_WEB: "true"
-    # --proxy-headers: the rate limit sees the real client address behind Caddy
-    # (the Caddyfile block in docs/WEB.md sets X-Forwarded-For itself).
+    # --proxy-headers: the rate limit sees the real client address behind the
+    # proxy (the Caddy block in docs/WEB.md sets X-Forwarded-For itself).
     command: ["web", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
     environment:
       MULITAMINER_WEB_DATA: /data
@@ -21,8 +24,8 @@ services:
       MULITAMINER_WEB_RETENTION_H: "24"
     volumes:
       - webdata:/data
-    networks:
-      - caddy
+    ports:
+      - "127.0.0.1:${MULITAMINER_WEB_PORT:-18090}:8000"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health',timeout=5).status==200 else 1)"]
@@ -36,14 +39,6 @@ services:
           memory: 2G
     security_opt:
       - no-new-privileges:true
-
-networks:
-  caddy:
-    external: true
-    # The network AnonShield's Caddy container is on. `docker network ls` on
-    # the server; AnonShield's prod compose names it anon-net under its
-    # Compose project prefix.
-    name: ${CADDY_NETWORK:?set CADDY_NETWORK to the Caddy container's Docker network}
 
 volumes:
   webdata:

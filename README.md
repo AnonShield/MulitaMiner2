@@ -80,7 +80,7 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 **2. Clone and sync:**
 
 ```bash
-git clone https://github.com/INARI18/MulitaMiner2.git
+git clone https://github.com/AnonShield/MulitaMiner2.git
 cd MulitaMiner2
 uv sync
 ```
