@@ -151,8 +151,10 @@ and pseudonymize the report first if it is sensitive.
 `docker-compose.prod.yml` runs the web app alone, cloud models only, published
 on the server's loopback (`127.0.0.1:18090`). The Caddy that runs on the host
 itself (the systemd service, `/etc/caddy/Caddyfile`) owns ports 80 and 443,
-terminates TLS and routes each name to a loopback port; Cloudflare proxies the
-name in front of it (a proxied CNAME to `anonshield.org`).
+terminates TLS and routes each name to a loopback port. Public traffic does
+not reach those ports directly: it enters through the Cloudflare tunnel
+(`cloudflared` on the same host), whose ingress rules, kept in Cloudflare
+Zero Trust, send each name to `https://127.0.0.1:443`.
 
 On the server, as a user in the `docker` group:
 
@@ -198,8 +200,15 @@ mulitaminer.anonshield.org {
 ```
 
 Then `sudo caddy validate --config /etc/caddy/Caddyfile` and
-`sudo systemctl reload caddy`. The DNS side is a proxied CNAME
-`mulitaminer.anonshield.org -> anonshield.org` in Cloudflare (done 2026-11-10).
+`sudo systemctl reload caddy` (done 2026-11-10).
+
+Cloudflare side: the name must be a public hostname of the `a10` tunnel
+(Zero Trust, Networks, Tunnels), like the other AnonShield names: service
+`https://127.0.0.1:443`, origin server name `mulitaminer.anonshield.org`, TLS
+verification off. Adding it there also creates the DNS record (a CNAME to the
+tunnel); a record with that name created by hand must be removed first. A
+name the tunnel does not know gets its catch-all, an empty 404, even though
+the Caddy block is in place.
 
 Resource limits in the compose file (1.5 CPU, 2 GB) follow AnonShield's
 sandbox convention; the app itself is light, the work happens at the
