@@ -146,13 +146,13 @@ a WAF would be the place for that); the operator is trusted while a job runs.
 The honest advice to users is on the form: use a key with a spending limit,
 and pseudonymize the report first if it is sensitive.
 
-## Public deployment (mulita.anonshield.org)
+## Public deployment (mulitaminer.anonshield.org)
 
 `docker-compose.prod.yml` runs the web app alone, cloud models only, published
-on the server's loopback (`127.0.0.1:18090`). The host's Caddy terminates TLS
-and proxies the name to that port; Cloudflare sits in front of the host through
-a tunnel (the `cloudflared` connector on the same machine), so the name also
-needs an ingress entry in that tunnel.
+on the server's loopback (`127.0.0.1:18090`). The Caddy that runs on the host
+itself (the systemd service, `/etc/caddy/Caddyfile`) owns ports 80 and 443,
+terminates TLS and routes each name to a loopback port; Cloudflare proxies the
+name in front of it (a proxied CNAME to `anonshield.org`).
 
 On the server, as a user in the `docker` group:
 
@@ -170,7 +170,7 @@ AnonShield names and importing the same access snippet they use (the body
 limit must cover the upload limit; Caddy's default is 1 MB):
 
 ```
-mulita.anonshield.org {
+mulitaminer.anonshield.org {
     import somente_cloudflare
     request_body {
         max_size 20MB
@@ -187,9 +187,9 @@ mulita.anonshield.org {
 }
 ```
 
-Then `sudo systemctl reload caddy`. In Cloudflare: a proxied DNS record for
-`mulita.anonshield.org` and, in the tunnel's ingress, `mulita.anonshield.org`
-to `https://127.0.0.1:443` with the name as SNI, like the other sites.
+Then `sudo caddy validate --config /etc/caddy/Caddyfile` and
+`sudo systemctl reload caddy`. The DNS side is a proxied CNAME
+`mulitaminer.anonshield.org -> anonshield.org` in Cloudflare (done 2026-11-10).
 
 Resource limits in the compose file (1.5 CPU, 2 GB) follow AnonShield's
 sandbox convention; the app itself is light, the work happens at the
