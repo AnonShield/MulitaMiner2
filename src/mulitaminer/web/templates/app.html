@@ -139,7 +139,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ nonce }}">
 (function () {
   const T = {{ tjs | tojson }};
   const input = document.getElementById('report');

@@ -28,6 +28,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import httpx
 from cryptography.fernet import Fernet
 from openai import OpenAI
 
@@ -100,6 +101,7 @@ class Job:
     profile: ModelProfile | None = field(default=None, repr=False, compare=False)
     api_key: str | None = field(default=None, repr=False, compare=False)
     cipher: Fernet | None = field(default=None, repr=False, compare=False)
+    pin: str | None = field(default=None, repr=False, compare=False)   # vetted base_url address
     log: list[str] = field(default_factory=list, repr=False, compare=False)  # live view only
 
     @property
@@ -107,44 +109,87 @@ class Job:
         return self.status in ("done", "failed")
 
 
-def _is_private(host: str) -> bool:
-    """True when the host resolves to a loopback, private, link-local or
-    reserved address. Unresolvable hosts pass: the job fails on its own later."""
+def _resolve(host: str) -> list[str]:
+    """The addresses a host resolves to, IPv4 first; empty when it does not
+    resolve (the job then fails on its own later)."""
     try:
-        infos = socket.getaddrinfo(host, None)
+        infos = socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
     except socket.gaierror:
-        return False
-    for info in infos:
-        ip = ipaddress.ip_address(info[4][0])
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_unspecified:
-            return True
-    return False
+        return []
+    found = list(dict.fromkeys(info[4][0] for info in infos))
+    return sorted(found, key=lambda ip: ":" in ip)
 
 
-def custom_profile(cfg: dict, api_key: str | None, allow_private: bool = False) -> ModelProfile:
-    """A ModelProfile from the form's JSON. The key field, not api_key_env,
-    decides whether the provider is keyed. On a public deployment base_url may
-    not point inside the server's network (SSRF), hence allow_private."""
+def _is_private(ip: str) -> bool:
+    addr = ipaddress.ip_address(ip)
+    return (addr.is_private or addr.is_loopback or addr.is_link_local
+            or addr.is_reserved or addr.is_unspecified)
+
+
+# Bounds for the numbers a web-form profile may set: the timeout decides how
+# long a stuck call can hold a worker, the token counts drive chunking.
+PROFILE_BOUNDS = {"request_timeout_s": (1, 300), "context_window": (256, 10_000_000),
+                  "max_output_tokens": (16, 1_000_000)}
+
+
+def custom_profile(cfg: dict, api_key: str | None, allow_private: bool = False,
+                   ) -> tuple[ModelProfile, str | None]:
+    """A ModelProfile from the form's JSON, plus the address the job must
+    connect to. The key field, not api_key_env, decides whether the provider
+    is keyed. On a public deployment base_url may not point inside the
+    server's network (SSRF): the host is resolved and vetted here, and the
+    job connects to that address only (PinnedTransport), so a DNS answer
+    that changes later cannot steer it elsewhere."""
     if "api_key_env" in cfg:
         raise ValueError("api_key_env is not accepted here; paste the key in the API key field")
     url = urlsplit(str(cfg.get("base_url", "")))
     if url.scheme not in ("http", "https") or not url.hostname:
         raise ValueError("base_url must be an http(s) URL with a host")
-    if not allow_private and _is_private(url.hostname):
-        raise ValueError("base_url points to a local or private address; the public demo "
-                         "only reaches public endpoints (run the tool locally for that)")
+    pin = None
+    if not allow_private:
+        addresses = _resolve(url.hostname)
+        if any(_is_private(ip) for ip in addresses):
+            raise ValueError("base_url points to a local or private address; the public demo "
+                             "only reaches public endpoints (run the tool locally for that)")
+        pin = addresses[0] if addresses else None
     profile = profile_from_dict(cfg, "custom profile")
-    return replace(profile, api_key_env=FORM_KEY_ENV if api_key else None)
+    for name, (lo, hi) in PROFILE_BOUNDS.items():
+        value = getattr(profile, name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not lo <= value <= hi:
+            raise ValueError(f"{name} must be a number between {lo} and {hi}")
+    return replace(profile, api_key_env=FORM_KEY_ENV if api_key else None), pin
 
 
-def build_client(profile: ModelProfile, api_key: str | None) -> LLMClient:
+class PinnedTransport(httpx.HTTPTransport):
+    """Sends every request for `host` to `address`, keeping the Host header
+    and the TLS server name: the connection goes where the submit-time check
+    looked, whatever DNS says by then."""
+
+    def __init__(self, host: str, address: str, **kwargs):
+        super().__init__(**kwargs)
+        self.host, self.address = host, address
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        if request.url.host == self.host:
+            request.headers["Host"] = request.url.netloc.decode()
+            request.extensions["sni_hostname"] = self.host
+            request.url = request.url.copy_with(host=self.address)
+        return super().handle_request(request)
+
+
+def build_client(profile: ModelProfile, api_key: str | None, pin: str | None = None) -> LLMClient:
     # Same construction as LLMClient's own, with the key passed explicitly
     # instead of read from the environment (which would leak between jobs).
+    http_client = None
+    if pin:
+        host = urlsplit(profile.base_url or "").hostname or ""
+        http_client = httpx.Client(transport=PinnedTransport(host, pin))
     transport = OpenAI(
         base_url=profile.base_url,
         api_key=api_key or "local",
         max_retries=settings.SDK_MAX_RETRIES,
         timeout=profile.request_timeout_s,
+        http_client=http_client,
     )
     return LLMClient(profile, transport=transport)
 
@@ -214,13 +259,13 @@ class JobStore:
 
     def create(self, pdf: bytes, scanner: str, model: str, profile: ModelProfile,
                api_key: str | None, profile_json: dict | None = None,
-               filename: str = "report.pdf") -> tuple[Job, str]:
+               filename: str = "report.pdf", pin: str | None = None) -> tuple[Job, str]:
         """Store the job and return it with its token (the link; never kept)."""
         token = secrets.token_urlsafe(32)
         cipher = fernet(token)
         job = Job(id=job_id(token), scanner=scanner, model=model,
                   profile_json=profile_json, created_at=_now(),
-                  profile=profile, api_key=api_key, cipher=cipher)
+                  profile=profile, api_key=api_key, cipher=cipher, pin=pin)
         d = self.job_dir(job.id)
         d.mkdir()
         (d / f"input.pdf{ENC}").write_bytes(cipher.encrypt(pdf))
@@ -237,7 +282,7 @@ class JobStore:
     def save(self, job: Job) -> None:
         job.updated_at = _now()
         data = {k: v for k, v in asdict(job).items()
-                if k not in ("profile", "api_key", "cipher", "log")}
+                if k not in ("profile", "api_key", "cipher", "pin", "log")}
         (self.job_dir(job.id) / "job.json").write_text(
             json.dumps(data, indent=2), encoding="utf-8")
 
@@ -279,28 +324,44 @@ class JobStore:
         return gone
 
 
+class JobTimeout(RuntimeError):
+    pass
+
+
 class JobProgress(Progress):
     """Routes pipeline events into the job's counters (and to disk, when the
-    job has a store)."""
+    job has a store). With a limit it also ends the run once the time is up:
+    the pipeline calls a hook after every chunk, and a raise here unwinds it
+    (the worker records the job as failed)."""
 
-    def __init__(self, store: JobStore | None, job: Job):
-        self.store, self.job = store, job
+    def __init__(self, store: JobStore | None, job: Job, max_s: float | None = None):
+        self.store, self.job, self.max_s = store, job, max_s
+        self.deadline = time.monotonic() + max_s if max_s else None
 
-    def _save(self) -> None:
+    def _tick(self) -> None:
+        if self.deadline is not None and time.monotonic() > self.deadline:
+            raise JobTimeout(f"The job ran longer than this server allows "
+                             f"({self.max_s / 60:g} min) and was stopped.")
         if self.store is not None:
             self.store.save(self.job)
 
     def stage(self, name: str) -> None:
         self.job.stage = name
-        self._save()
+        self._tick()
 
     def segmented(self, total: int) -> None:
         self.job.total_blocks, self.job.stage = total, "extracting"
-        self._save()
+        self._tick()
 
     def chunk_done(self, got: int, expected: int) -> None:
         self.job.done_blocks += got
-        self._save()
+        self._tick()
+
+    def chunk_failed(self, reason: str) -> None:
+        self._tick()
+
+    def retry_round(self, round_no: int, chunks: int) -> None:
+        self._tick()
 
 
 def build_example(pdf: Path, scanner: str, model: str, out_dir: Path,
@@ -341,8 +402,8 @@ class Worker:
     models, whose work happens at the provider, and one at a time for local
     models, which share one GPU."""
 
-    def __init__(self, store: JobStore, workers: int = 1):
-        self.store = store
+    def __init__(self, store: JobStore, workers: int = 1, job_max_s: float | None = None):
+        self.store, self.job_max_s = store, job_max_s
         self._queue: queue.Queue[str] = queue.Queue()
         self._threads = [threading.Thread(target=self._loop, daemon=True, name=f"mulita-web-worker-{i}")
                          for i in range(max(1, workers))]
@@ -386,9 +447,9 @@ class Worker:
                 pdf.write_bytes(job.cipher.decrypt((d / f"input.pdf{ENC}").read_bytes()))
                 config = RunConfig(input_path=pdf, scanner=job.scanner,
                                    model=job.model, formats=EXPORTS, output_dir=work)
-                client = build_client(job.profile, job.api_key)
+                client = build_client(job.profile, job.api_key, job.pin)
                 result, _ = pipeline_run(config, client=client, run_dir=work / "run",
-                                         progress=JobProgress(self.store, job))
+                                         progress=JobProgress(self.store, job, self.job_max_s))
                 job.status = "done"
                 job.records = len(result.records)
                 job.duration_s = result.duration_s
@@ -404,7 +465,7 @@ class Worker:
                 if (work / "run").is_dir():
                     _seal(work / "run", job.cipher, d)   # also on failure: run.log is the evidence
                 job.finished_at = _now()
-                job.profile, job.api_key, job.cipher = None, None, None
+                job.profile, job.api_key, job.cipher, job.pin = None, None, None, None
                 self.store.save(job)
 
 

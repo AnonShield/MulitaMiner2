@@ -6,6 +6,7 @@ import importlib.metadata
 import io
 import json
 import os
+import secrets
 import zipfile
 from contextlib import asynccontextmanager
 from dataclasses import asdict
@@ -24,11 +25,13 @@ from mulitaminer.web.jobs import (DOWNLOADS, EXAMPLE_DIR, EXAMPLE_META, Cleaner,
 
 MEDIA = {".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
          ".csv": "text/csv", ".json": "application/json", ".sarif": "application/json"}
+# The pages' own inline scripts carry the request's nonce; anything injected
+# into a page does not run.
+CSP = ("default-src 'self'; script-src 'self' 'nonce-{nonce}'; "
+       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+       "font-src https://fonts.gstatic.com; img-src 'self' data:; "
+       "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'")
 SECURITY_HEADERS = {
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-                               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                               "font-src https://fonts.gstatic.com; img-src 'self' data:; "
-                               "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'",
     "Referrer-Policy": "no-referrer",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
@@ -121,7 +124,7 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
                max_mb: float | None = None, retention_h: float | None = None,
                max_queue: int | None = None, allow_private: bool | None = None,
                rate_per_hour: int | None = None, workers: int | None = None,
-               example_dir: Path | None = None) -> FastAPI:
+               example_dir: Path | None = None, job_max_min: float | None = None) -> FastAPI:
     # Default outside the project tree: on a dev machine the repo tends to live
     # under Documents, where desktop antivirus watches every write.
     data_dir = data_dir or Path(os.getenv("MULITAMINER_WEB_DATA", Path.home() / ".mulitaminer" / "web"))
@@ -142,6 +145,9 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
     # Jobs run concurrently (cloud models: the work happens at the provider);
     # local-model jobs still go one at a time, see Worker.
     workers = workers or int(os.getenv("MULITAMINER_WEB_WORKERS", "3"))
+    # Wall-clock limit per job: bounds how long one submission can hold a
+    # worker (a huge report, or a custom endpoint that never answers).
+    job_max_min = job_max_min or float(os.getenv("MULITAMINER_WEB_JOB_MAX_MIN", "120"))
     example_dir = example_dir or Path(os.getenv("MULITAMINER_WEB_EXAMPLE_DIR", EXAMPLE_DIR))
     build = os.getenv("MULITAMINER_WEB_BUILD", "")[:7]   # the image's commit, set at build time
     unknown = [m for m in models if m not in all_models()]
@@ -149,7 +155,7 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         raise ValueError(f"MULITAMINER_WEB_MODELS names unknown profile(s) {unknown}")
 
     store = JobStore(data_dir)
-    worker = Worker(store, workers)
+    worker = Worker(store, workers, job_max_min * 60)
     cleaner = Cleaner(store, retention_h)
 
     @asynccontextmanager
@@ -165,9 +171,11 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
     @app.middleware("http")
     async def security_headers(request: Request, call_next):
         # The job link is a secret: no Referer to other sites, no framing, and
-        # scripts only from this origin (the pages inline their own).
+        # scripts only from this origin, inline ones only with this nonce.
+        request.state.nonce = secrets.token_urlsafe(16)
         resp = await call_next(request)
         resp.headers.update(SECURITY_HEADERS)
+        resp.headers["Content-Security-Policy"] = CSP.format(nonce=request.state.nonce)
         return resp
     templates = Jinja2Templates(directory=HERE / "templates")
     app.state.store = store   # tests reach the store through here
@@ -180,7 +188,7 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         lang = lang_of(request)
         t = strings(lang)
         base = {
-            "request": request, "lang": lang, "t": t,
+            "request": request, "lang": lang, "t": t, "nonce": getattr(request.state, "nonce", ""),
             "tjs": {k: t[k] for k in JS_KEYS},
             "langs": [{"code": c, "label": lbl, "url": f"{request.url.path}?lang={c}"}
                       for c, lbl in LANGS.items()],
@@ -294,13 +302,13 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         if scanner not in all_scanners():
             return bad(t["e_scanner"].format(s=scanner))
 
-        cfg = None
+        cfg, pin = None, None
         if model == CUSTOM:
             try:
                 cfg = json.loads(profile_json)
                 if not isinstance(cfg, dict):
                     raise ValueError("the profile must be a JSON object")
-                profile = custom_profile(cfg, api_key, allow_private=allow_private)
+                profile, pin = custom_profile(cfg, api_key, allow_private=allow_private)
             except (ValueError, TypeError) as exc:
                 return bad(t["e_custom"].format(e=exc))
         elif model in models:
@@ -315,7 +323,7 @@ def create_app(data_dir: Path | None = None, models: list[str] | None = None,
         tokens = []
         for pdf, filename in pdfs:
             job, token = store.create(pdf, scanner, model, profile, api_key, profile_json=cfg,
-                                      filename=filename)
+                                      filename=filename, pin=pin)
             worker.submit(job)
             tokens.append(token)
         if len(tokens) == 1:

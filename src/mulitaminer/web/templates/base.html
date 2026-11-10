@@ -17,7 +17,7 @@
 <link rel="icon" href="/static/favicon.svg?v={{ v }}" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{ v }}">
 <link rel="stylesheet" href="/static/style.css?v={{ v }}">
-<script>try{const q=new URLSearchParams(location.search).get('theme');const s=q||localStorage.getItem('theme');if(s==='light'||s==='dark'){document.documentElement.dataset.theme=s;if(q)localStorage.setItem('theme',s)}}catch(e){}</script>
+<script nonce="{{ nonce }}">try{const q=new URLSearchParams(location.search).get('theme');const s=q||localStorage.getItem('theme');if(s==='light'||s==='dark'){document.documentElement.dataset.theme=s;if(q)localStorage.setItem('theme',s)}}catch(e){}</script>
 </head>
 <body>
 <div class="bg" aria-hidden="true"></div>
@@ -93,7 +93,7 @@
     </div>
   </div>
 </footer>
-<script>
+<script nonce="{{ nonce }}">
 document.getElementById('theme').addEventListener('click', () => {
   const root = document.documentElement;
   root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';   // dark is the default

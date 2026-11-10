@@ -327,7 +327,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ nonce }}">
 (function () {
   // One real finding per scanner tab; the record types itself out, keeping the
   // syntax colours. Tabs cycle on their own until someone clicks one.

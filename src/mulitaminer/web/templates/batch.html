@@ -45,7 +45,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ nonce }}">
 (function () {
   const T = {{ tjs | tojson }};
   const items = [...document.querySelectorAll('#blist li')];

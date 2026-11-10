@@ -1,9 +1,11 @@
 """Web front end: submit, poll, download; secrets never on disk; cleanup."""
 import json
+import re
 import threading
 import time
 from datetime import datetime, timedelta, timezone
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -127,13 +129,70 @@ def test_custom_profile(client, tmp_path):
 def test_custom_profile_rejects_private_hosts_on_public_site(client, tmp_path, monkeypatch):
     for url in ("http://127.0.0.1:11434/v1", "http://localhost:8000/v1", "http://10.0.0.5/v1",
                 "http://169.254.169.254/v1", "ftp://x.example/v1"):
-        cfg = {"key": "m", "model": "m", "base_url": url, "context_window": 10, "max_output_tokens": 5}
+        cfg = {"key": "m", "model": "m", "base_url": url, "context_window": 1000, "max_output_tokens": 100}
         assert submit(client, model="custom", profile_json=json.dumps(cfg)).status_code == 400, url
     monkeypatch.setattr(jobs, "pipeline_run", fake_run)
     with TestClient(create_app(data_dir=tmp_path / "local", models=["deepseek"], allow_private=True)) as c:
         cfg = {"key": "m", "model": "m", "base_url": "http://localhost:11434/v1",
-               "context_window": 10, "max_output_tokens": 5}
+               "context_window": 1000, "max_output_tokens": 100}
         assert submit(c, model="custom", profile_json=json.dumps(cfg), api_key="").status_code == 303
+
+
+def test_custom_profile_numbers_are_bounded(client):
+    base = {"key": "m", "model": "m", "base_url": "https://x.example/v1",
+            "context_window": 1000, "max_output_tokens": 100}
+    for bad in ({"request_timeout_s": 10_000_000}, {"max_output_tokens": 0},
+                {"context_window": "lots"}, {"request_timeout_s": True}):
+        assert submit(client, model="custom", profile_json=json.dumps(base | bad)).status_code == 400, bad
+    assert submit(client, model="custom", profile_json=json.dumps(base | {"request_timeout_s": 60})).status_code == 303
+
+
+def test_custom_profile_pins_the_vetted_address(monkeypatch):
+    """The job connects to the address checked at submit time, with the
+    original host for TLS and the Host header, whatever DNS says later."""
+    cfg = {"key": "m", "model": "m", "base_url": "https://api.x.example/v1",
+           "context_window": 1000, "max_output_tokens": 100}
+    import socket
+    monkeypatch.setattr(socket, "getaddrinfo", lambda host, *a, **k: [
+        (socket.AF_INET6, 1, 6, "", ("2606:2800::1", 443, 0, 0)),
+        (socket.AF_INET, 1, 6, "", ("93.184.216.34", 443))])
+    assert jobs._resolve("api.x.example") == ["93.184.216.34", "2606:2800::1"]   # IPv4 first
+    profile, pin = jobs.custom_profile(cfg, KEY)
+    assert pin == "93.184.216.34"
+    monkeypatch.setattr(jobs, "_resolve", lambda host: ["93.184.216.34", "10.0.0.5"])
+    with pytest.raises(ValueError):
+        jobs.custom_profile(cfg, KEY)
+    assert jobs.custom_profile(cfg, KEY, allow_private=True)[1] is None
+
+    seen = {}
+
+    def fake_handle(self, request):
+        seen.update(url=str(request.url), host=request.headers["host"],
+                    sni=request.extensions.get("sni_hostname"))
+        return httpx.Response(200)
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", fake_handle)
+    with httpx.Client(transport=jobs.PinnedTransport("api.x.example", pin)) as c:
+        assert c.get("https://api.x.example/v1/models").status_code == 200
+    assert seen == {"url": "https://93.184.216.34/v1/models", "host": "api.x.example",
+                    "sni": "api.x.example"}
+
+
+def test_job_time_limit_stops_the_run(tmp_path, monkeypatch):
+    monkeypatch.setattr(jobs, "pipeline_run", fake_run)
+    app = create_app(data_dir=tmp_path, models=["deepseek"], rate_per_hour=1000, job_max_min=1e-9)
+    with TestClient(app) as c:
+        status = wait_done(c, token_of(submit(c)))
+    assert status["status"] == "failed"
+    assert "longer than this server allows" in status["error"]
+
+
+def test_csp_nonce_covers_the_inline_scripts(client):
+    r = client.get("/app")
+    csp = r.headers["content-security-policy"]
+    nonce = re.search(r"'nonce-([^']+)'", csp).group(1)
+    assert f'<script nonce="{nonce}">' in r.text
+    assert "unsafe-inline" not in csp.split("style-src")[0]
+    assert client.get("/app").headers["content-security-policy"] != csp   # fresh per response
 
 
 def test_failed_run_reports_message(client, monkeypatch):
