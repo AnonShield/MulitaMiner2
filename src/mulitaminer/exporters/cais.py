@@ -13,6 +13,7 @@ from pathlib import Path
 from mulitaminer.exporters import register
 from mulitaminer.exporters.generic import cves_from
 from mulitaminer.models import VulnRecord
+from mulitaminer.writers import guard_formulas
 
 CWE_RE = re.compile(r"CWE[-\s](\d+)", re.IGNORECASE)
 IPV4_RE = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
@@ -115,5 +116,5 @@ def to_cais(records: list[VulnRecord], record_type: type[VulnRecord], out_dir: P
         for row in rows
     ]
     path = out_dir / "results.cais.csv"
-    pd.DataFrame(csv_rows).to_csv(path, index=False, encoding="utf-8")
+    guard_formulas(pd.DataFrame(csv_rows)).to_csv(path, index=False, encoding="utf-8")
     return path

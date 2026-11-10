@@ -77,11 +77,23 @@ def _dataframe(records: list[VulnRecord]):
     return pd.DataFrame(rows, columns=cols)
 
 
+# A spreadsheet runs a cell that starts with one of these as a formula: Excel
+# on a CSV, all of them (DDE, HYPERLINK); openpyxl in an XLSX, "=". Text the
+# scanner copied from a scanned host must stay text, and the apostrophe is
+# Excel's own mark for a literal.
+CSV_FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
+XLSX_FORMULA_STARTS = ("=",)
+
+
+def guard_formulas(df, starts: tuple[str, ...] = CSV_FORMULA_STARTS):
+    return df.map(lambda v: "'" + v if isinstance(v, str) and v.startswith(starts) else v)
+
+
 def write_xlsx(records: list[VulnRecord], path: Path) -> None:
-    _dataframe(records).to_excel(path, index=False)
+    guard_formulas(_dataframe(records), XLSX_FORMULA_STARTS).to_excel(path, index=False)
     log.info("Wrote %d records to %s", len(records), path)
 
 
 def write_csv(records: list[VulnRecord], path: Path) -> None:
-    _dataframe(records).to_csv(path, index=False, encoding="utf-8")
+    guard_formulas(_dataframe(records)).to_csv(path, index=False, encoding="utf-8")
     log.info("Wrote %d records to %s", len(records), path)

@@ -57,3 +57,18 @@ def test_config_declared_field_joins_union_empty_for_others():
     assert "category" in cols
     # It is not part of OpenVAS's own schema, but the union carries it.
     assert "category" not in columns_for(OpenVASRecord)
+
+
+def test_formula_like_cells_stay_text(tmp_path):
+    import pandas as pd
+
+    hostile = [OpenVASRecord(name='=HYPERLINK("http://x.test","open")', severity="HIGH", cvss=1.0,
+                             description=["-2+3", "@SUM(1)"], source="OPENVAS")]
+    write_csv(hostile, tmp_path / "h.csv")
+    write_xlsx(hostile, tmp_path / "h.xlsx")
+    csv_text = (tmp_path / "h.csv").read_text(encoding="utf-8")
+    assert "'=HYPERLINK" in csv_text and "'-2+3" in csv_text
+    df = pd.read_excel(tmp_path / "h.xlsx")
+    assert df.iloc[0]["Name"] == "'=HYPERLINK(\"http://x.test\",\"open\")"   # text, not a formula
+    assert df.iloc[0]["description"] == "-2+3\n@SUM(1)"   # openpyxl only runs "="
+
