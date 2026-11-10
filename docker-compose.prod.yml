@@ -3,9 +3,11 @@
 #
 #   docker-compose -f docker-compose.prod.yml up -d --build
 #
-# MULITAMINER_WEB_PORT picks the loopback port (default 18090). Format 3.7:
-# the server's docker-compose is 1.25.
-version: "3.7"
+# MULITAMINER_WEB_PORT picks the loopback port (default 18090). Format 2.4
+# rather than 3.x: on docker-compose 1.25 (the server's) the 3.x
+# `deploy.resources` limits are ignored outside Swarm; mem_limit/cpus/
+# pids_limit here are enforced.
+version: "2.4"
 
 services:
   web:
@@ -17,6 +19,10 @@ services:
     # --proxy-headers: the rate limit sees the real client address behind the
     # proxy (the Caddy block in docs/WEB.md sets X-Forwarded-For itself).
     command: ["web", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+    # Unprivileged: the image's /data belongs to this uid, so a new volume
+    # inherits it (a volume created by an older, root-run image must be
+    # removed or chowned first, see docs/WEB.md).
+    user: "1000:1000"
     environment:
       MULITAMINER_WEB_DATA: /data
       MULITAMINER_WEB_MODELS: deepseek,gpt-4o-mini,haiku,llama-3.3-70b
@@ -24,6 +30,8 @@ services:
       MULITAMINER_WEB_RETENTION_H: "24"
     volumes:
       - webdata:/data
+    tmpfs:
+      - /tmp   # a running job's plaintext lives in memory, never on disk
     ports:
       - "127.0.0.1:${MULITAMINER_WEB_PORT:-18090}:8000"
     restart: unless-stopped
@@ -32,11 +40,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: "1.5"
-          memory: 2G
+    # PDFium parses the uploads in native code: keep a bad PDF from taking
+    # the host with it.
+    mem_limit: 2g
+    cpus: 1.5
+    pids_limit: 256
     security_opt:
       - no-new-privileges:true
 

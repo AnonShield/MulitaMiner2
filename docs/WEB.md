@@ -74,6 +74,7 @@ All optional, read at startup:
 | `MULITAMINER_WEB_RATE_PER_HOUR` | `10` | Submissions per client address per hour before HTTP 429 |
 | `MULITAMINER_WEB_ALLOW_PRIVATE_URLS` | unset | `1` lets a custom profile point at localhost or a private network (your own machine only; on the public site it is an SSRF vector) |
 | `MULITAMINER_WEB_WORKERS` | `3` | Jobs run at the same time. Local-model jobs are serialised regardless |
+| `MULITAMINER_WEB_JOB_MAX_MIN` | `120` | Minutes one job may run before the server stops it, so a huge report or a custom endpoint that never answers cannot hold a worker for good |
 | `MULITAMINER_WEB_EXAMPLE_DIR` | the package's `web/example` | Where the precomputed example lives (below) |
 | `MULITAMINER_WEB_BUILD` | unset | Commit shown in the footer; the Dockerfile sets it from the `GIT_SHA` build arg |
 | `MULITAMINER2_LLMS_DIR` | unset | Extra profiles, as for the CLI ([ADDING_A_MODEL.md](ADDING_A_MODEL.md)) |
@@ -129,16 +130,20 @@ should not log requests either (the AnonShield blocks do).
 
 Measures in the code: HTTPS terminated by Caddy; security headers on every
 response (a Content-Security-Policy that allows scripts from this origin
-only, `Referrer-Policy: no-referrer` so the job link never travels to another
-site, no framing); `type=password` input with autocomplete off; the key is not part of any URL or re-rendered form;
+only, inline ones only with a nonce minted per response, `Referrer-Policy:
+no-referrer` so the job link never travels to another site, no framing); `type=password` input with autocomplete off; the key is not part of any URL or re-rendered form;
 provider error messages that contain the key are replaced; Jinja autoescaping
 on every user-controlled string; downloads are looked up by slug, never by
 path; upload magic bytes and size checked server side; a custom `base_url`
 may not resolve to a private, loopback or link-local address on the public
 site (otherwise a user could make the server call internal services with
-their request); a queue cap bounds disk and CPU use; a per-address rate
-limit (`MULITAMINER_WEB_RATE_PER_HOUR`, default 10) bounds abuse by one
-visitor.
+their request), and the job connects only to the address vetted at submit
+time, so a DNS answer that changes later cannot redirect it; the numbers a
+custom profile may set are bounded (timeout at most 300 s); every job has a
+wall-clock limit (`MULITAMINER_WEB_JOB_MAX_MIN`); CSV and XLSX cells that a
+spreadsheet would run as a formula get a leading apostrophe; a queue cap
+bounds disk and CPU use; a per-address rate limit
+(`MULITAMINER_WEB_RATE_PER_HOUR`, default 10) bounds abuse by one visitor.
 
 Not covered, by choice: there is no login, so results are only as private as
 the link; the rate limit is per address, so a botnet is not stopped (Caddy or
@@ -167,6 +172,14 @@ curl -s http://127.0.0.1:18090/api/health   # {"status":"ok"}
 Updating is `git pull` and the same `up -d --build`. `MULITAMINER_WEB_PORT`
 changes the loopback port.
 
+The container runs as uid 1000 with memory, CPU and process limits and
+`/tmp` on tmpfs (compose format 2.4: docker-compose 1.25 enforces those keys,
+while the 3.x `deploy` limits it silently ignores). A volume created by the
+earlier root-run image belongs to root, so before the first `up` with this
+version either drop it (`docker-compose -f docker-compose.prod.yml down -v`;
+it only holds jobs, which expire anyway) or
+`docker run --rm -v mulitaminer2_webdata:/data alpine chown -R 1000:1000 /data`.
+
 Host Caddy block (`/etc/caddy/Caddyfile`, root), in the same shape as the
 other AnonShield names: `tls internal` because Cloudflare talks to the origin
 in "full" mode, and the `somente_cloudflare` snippet, which answers 403 to
@@ -184,6 +197,7 @@ mulitaminer.anonshield.org {
     header {
         -Server
         X-Content-Type-Options "nosniff"
+        Strict-Transport-Security "max-age=31536000"
     }
     # No access log: the job link in the URL is the decryption key for that
     # job's files.

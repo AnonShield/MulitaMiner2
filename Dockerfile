@@ -36,5 +36,10 @@ RUN groups=""; \
     if [ "$INSTALL_WEB" = "true" ]; then groups="$groups --group web"; fi; \
     uv sync --frozen --no-dev $groups
 
-ENTRYPOINT ["uv", "run", "--no-sync", "mulitaminer"]
+# The public site runs this image unprivileged (docker-compose.prod.yml sets
+# the user): the data dir must already belong to that uid so a fresh volume
+# inherits it. The entrypoint is the venv's own script, so nothing at run
+# time needs uv's cache or a home directory.
+RUN mkdir -p /data && chown 1000:1000 /data
+ENTRYPOINT ["/app/.venv/bin/mulitaminer"]
 CMD ["--help"]
