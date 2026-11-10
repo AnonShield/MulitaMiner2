@@ -18,14 +18,14 @@ _Block-anchored · Multi-scanner · Multi-LLM_
 
 # MulitaMiner
 
-Security scanners like OpenVAS/Greenbone and Tenable WAS export their findings
-as PDFs, each in its own layout and vocabulary. MulitaMiner reads those PDFs and
+Security scanners like OpenVAS/Greenbone, Nessus, Qualys and ZAP export their
+findings as PDFs, each in its own layout and vocabulary. MulitaMiner reads those PDFs and
 turns them into a single, structured, analysis-ready vulnerability schema, using
 an LLM to fill the fields while a deterministic pass keeps every finding
 accounted for.
 
-Beyond extraction it unifies heterogeneous scanners (OpenVAS/Greenbone,
-Tenable WAS, or your own via a JSON config) under one record model, exports to
+Beyond extraction it unifies heterogeneous scanners (seven profiles ship, see
+[Supported](#supported); your own takes a JSON config) under one record model, exports to
 the formats real tools ingest (SARIF, CSAF, DefectDojo, CAIS, CSV, XLSX),
 ranks findings into a KEV/EPSS/SSVC remediation queue, and ships a
 schema-driven evaluation subsystem that scores extraction quality against
