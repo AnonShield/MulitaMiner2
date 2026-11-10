@@ -165,24 +165,34 @@ curl -s http://127.0.0.1:18090/api/health   # {"status":"ok"}
 Updating is `git pull` and the same `up -d --build`. `MULITAMINER_WEB_PORT`
 changes the loopback port.
 
-Host Caddy block (`/etc/caddy/Caddyfile`, root), next to the other
-AnonShield names and importing the same access snippet they use (the body
-limit must cover the upload limit; Caddy's default is 1 MB):
+Host Caddy block (`/etc/caddy/Caddyfile`, root), in the same shape as the
+other AnonShield names: `tls internal` because Cloudflare talks to the origin
+in "full" mode, and the `somente_cloudflare` snippet, which answers 403 to
+anything not coming from Cloudflare. The body limit must cover the upload
+limit (Caddy's default is 1 MB):
 
 ```
 mulitaminer.anonshield.org {
+    tls internal
     import somente_cloudflare
+    encode zstd gzip
     request_body {
         max_size 20MB
     }
-    # The job link in the URL is the decryption key for that job's files.
+    header {
+        -Server
+        X-Content-Type-Options "nosniff"
+    }
+    # No access log: the job link in the URL is the decryption key for that
+    # job's files.
     log {
         output discard
     }
     reverse_proxy 127.0.0.1:18090 {
-        # Overwrite, do not append: the app's rate limit reads the first
-        # address in this header, so a client must not be able to plant one.
-        header_up X-Forwarded-For {remote_host}
+        # Overwrite, do not append: the app's rate limit counts per this
+        # address. Only Cloudflare reaches this block, so its header is the
+        # real client; {remote_host} would be a Cloudflare edge.
+        header_up X-Forwarded-For {header.CF-Connecting-IP}
     }
 }
 ```
