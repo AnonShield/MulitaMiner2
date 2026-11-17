@@ -30,7 +30,8 @@ MEDIA = {".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.s
 CSP = ("default-src 'self'; script-src 'self' 'nonce-{nonce}'; "
        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
        "font-src https://fonts.gstatic.com; img-src 'self' data:; "
-       "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'")
+       "connect-src 'self'; frame-src https://drive.google.com; "
+       "frame-ancestors 'none'; base-uri 'self'")
 SECURITY_HEADERS = {
     "Referrer-Policy": "no-referrer",
     "X-Content-Type-Options": "nosniff",
