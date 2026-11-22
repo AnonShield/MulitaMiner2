@@ -25,6 +25,7 @@ feeds/
 archive/
 
 # Local training/eval datasets (user-provided, never committed)
+resources/private/
 pdfs/
 vulnnet_scans_openvas.csv
 outros/
