@@ -21,6 +21,14 @@ def test_cleanup_removes_footers_and_continuations():
     assert not re.search(r"Page \d+ of \d+", doc.text)
 
 
+def test_text_input_is_used_verbatim(tmp_path):
+    txt = tmp_path / "report.txt"
+    txt.write_text("10287 Traceroute Information Info\nPlugin Output:\n", encoding="utf-8")
+    doc = extract_pdf(txt)
+    assert doc.text == txt.read_text(encoding="utf-8")
+    assert (doc.page_count, doc.backend) == (0, "text")
+
+
 def test_no_control_characters_survive_extraction():
     """pypdfium2 emits broken ligatures as raw control chars ("a\\x1bected" =
     "affected"); a stray control char makes the LLM's JSON invalid, so the

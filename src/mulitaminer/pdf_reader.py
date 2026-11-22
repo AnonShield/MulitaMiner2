@@ -79,6 +79,9 @@ def _restore_cid_glyphs(text: str) -> str:
 
 def extract_pdf(path: Path) -> ExtractedDoc:
     """Extract and clean the full report text."""
+    if path.suffix.lower() == ".txt":
+        # Text already extracted (and e.g. pseudonymized) from a PDF: use as is.
+        return ExtractedDoc(text=path.read_text(encoding="utf-8"), page_count=0, backend="text")
     raw_pages = _extract_pages(path)
     log.info("Extracted %d pages from %s", len(raw_pages), path.name)
     text = "".join(_clean_page(p) for p in raw_pages)
