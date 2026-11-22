@@ -224,9 +224,18 @@ def _extract_chunk(
         debug_sink.append({"chunk": chunk.index, "blocks": sorted(expected),
                            "response": call_usage["raw"]})
 
+    items = list(parsed.items)
+    # One block sent and one item back: it can only be that block's. The tuned
+    # model sometimes numbers items by position instead of copying the header id.
+    if len(expected) == 1 and len(items) == 1 and items[0].block_id not in expected:
+        (only,) = expected
+        warnings.append(f"chunk {chunk.index}: block_id {items[0].block_id} remapped to {only} "
+                        "(single-block call)")
+        items[0] = items[0].model_copy(update={"block_id": only})
+
     seen: set[int] = set()        # ids already consumed in this response
     succeeded: set[int] = set()   # ids that produced a valid record
-    for item in parsed.items:
+    for item in items:
         bid = item.block_id
         if bid not in expected:
             warnings.append(f"chunk {chunk.index}: unknown block_id {bid} dropped")

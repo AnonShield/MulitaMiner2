@@ -90,6 +90,25 @@ def test_unknown_and_duplicate_ids_dropped_with_warning():
     assert dict(drops) == {"duplicate_id": 1, "unknown_id": 1}
 
 
+def test_single_block_call_remaps_wrong_id():
+    blocks = _blocks(1)
+    client = FakeClient([[_item(1)]])   # block 0 sent, model answers "1"
+    drops: Counter = Counter()
+    records, warnings, _ = extract_blocks(blocks, PROFILE, client, TokenUsage(), drops=drops)
+    assert len(records) == 1 and len(client.calls) == 1   # no retry needed
+    assert any("block_id 1 remapped to 0" in w for w in warnings)
+    assert not drops
+
+
+def test_wrong_id_in_multi_block_call_is_still_dropped():
+    blocks = _blocks(2)
+    client = FakeClient([[_item(0), _item(5)], [_item(1)]])
+    drops: Counter = Counter()
+    records, _, _ = extract_blocks(blocks, PROFILE, client, TokenUsage(), drops=drops)
+    assert len(records) == 2
+    assert drops["unknown_id"] == 1
+
+
 def test_retry_reasons_counted_by_kind():
     from collections import Counter
 
