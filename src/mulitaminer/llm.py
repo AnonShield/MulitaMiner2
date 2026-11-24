@@ -119,6 +119,25 @@ def _resolve_api_key(profile: ModelProfile) -> str:
     )
 
 
+def require_all(schema: dict) -> dict:
+    """Mark every property required, in every object of the schema.
+
+    Grammar engines (llama.cpp, used by Ollama) emit required keys first and let
+    optional ones appear only in schema order, so a model whose learned key order
+    differs gets steered past fields and closes them empty. With every key
+    required the grammar order is the schema order; empty values ([], null, "")
+    stay valid, so nothing is forced to be invented."""
+    if isinstance(schema, dict):
+        if isinstance(schema.get("properties"), dict):
+            schema["required"] = list(schema["properties"])
+        for value in schema.values():
+            require_all(value)
+    elif isinstance(schema, list):
+        for value in schema:
+            require_all(value)
+    return schema
+
+
 def clean_response(text: str, reasoning_tags: bool) -> str:
     """Strip markdown fences and reasoning blocks before JSON parsing."""
     if reasoning_tags:
@@ -170,7 +189,7 @@ class LLMClient:
                 "type": "json_schema",
                 "json_schema": {
                     "name": "vulnerability_extraction",
-                    "schema": response_model.model_json_schema(by_alias=True),
+                    "schema": require_all(response_model.model_json_schema(by_alias=True)),
                 },
             }
         else:

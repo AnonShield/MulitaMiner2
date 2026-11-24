@@ -79,6 +79,59 @@ def test_extract_uses_json_schema_when_supported():
     assert transport.last_kwargs["response_format"]["type"] == "json_schema"
 
 
+def test_json_schema_marks_every_property_required_at_every_level():
+    class Inner(BaseModel):
+        a: str = ""
+        b: int | None = None
+
+    class Item(BaseModel):
+        name: str
+        notes: list[str] = []
+        inner: Inner = Inner()
+
+    class Resp(BaseModel):
+        items: list[Item]
+
+    transport = FakeTransport('{"items": []}')
+    LLMClient(MODELS["gpt-4o-mini"], transport=transport).extract("sys", "user", Resp)
+    schema = transport.last_kwargs["response_format"]["json_schema"]["schema"]
+    objects = [schema, *schema["$defs"].values()]
+    assert all(o["required"] == list(o["properties"]) for o in objects)
+
+
+def test_every_scanner_field_accepts_an_empty_value():
+    # require_all makes every key mandatory under the grammar; a field with no
+    # empty form would force the model to invent a value when the report has none.
+    from mulitaminer.extraction import response_model_for
+    from mulitaminer.scanner_engine import all_scanners
+
+    always_present = {"block_id", "Name", "severity"}
+
+    def accepts_empty(prop: dict, defs: dict) -> bool:
+        if "$ref" in prop:
+            return accepts_empty(defs[prop["$ref"].split("/")[-1]], defs)
+        if "anyOf" in prop:
+            return any(accepts_empty(p, defs) for p in prop["anyOf"])
+        kind = prop.get("type")
+        if kind == "null":
+            return True
+        if kind == "array":
+            return prop.get("minItems", 0) == 0
+        if kind == "string":
+            return prop.get("minLength", 0) == 0
+        if kind == "object":
+            return all(accepts_empty(p, defs) for p in prop.get("properties", {}).values())
+        return False
+
+    for name, profile in all_scanners().items():
+        schema = response_model_for(profile.record_type).model_json_schema(by_alias=True)
+        defs = schema.get("$defs", {})
+        for d in defs.values():
+            for field, prop in d.get("properties", {}).items():
+                if field not in always_present:
+                    assert accepts_empty(prop, defs), f"{name}.{field} has no empty value"
+
+
 def test_extract_propagates_invalid_json_for_retry_policy():
     client = LLMClient(MODELS["deepseek"], transport=FakeTransport("not json at all"))
     with pytest.raises(json.JSONDecodeError):
