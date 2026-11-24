@@ -511,6 +511,7 @@ def evaluate_run(
         "retries": (run or {}).get("retries", {}),
         "threshold": threshold,
         "text_metrics": [s.name for s in selected_text],
+        "bertscore_rescaled": True,
         "unavailable_metrics": {
             s.name: s.hint for s in text_scorers() if not s.available
         },

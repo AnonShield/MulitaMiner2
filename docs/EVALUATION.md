@@ -95,7 +95,14 @@ Prose fields are judged from several angles because each metric has a blind spot
   **order** and phrasing, which `token_f1` ignores.
 - **`bertscore`**: semantic similarity from contextual embeddings, so it credits
   a paraphrase (same meaning, different words) that token overlap would miss.
-  Optional and heavy (`uv sync --group eval`).
+  Rescaled with the BERTScore baseline (`rescale_with_baseline`), so unrelated
+  text scores near 0 instead of ~0.85 (floored at 0, an omission's score). The order of individual pairs is
+  unchanged, but field means can reorder models: presence-rule pairs stay at 0
+  or 1, so a paraphrase now weighs against a verbatim copy on the same footing
+  as an omission does (raw, unrelated text scored 0.86 while an omission scored
+  0). Older
+  evaluations without `meta.bertscore_rescaled` are raw; convert them with
+  `tools/rescale_bertscore.py`. Optional and heavy (`uv sync --group eval`).
 - **`nli`**: a contradiction check. It is the safety net for `bertscore`'s blind
   spot: an extraction that negates the baseline ("does not use a weak
   algorithm") shares almost every token, so `bertscore` scores it very high, yet

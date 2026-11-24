@@ -173,11 +173,14 @@ def _bertscore_batch(pairs: list[tuple[Any, Any]]) -> list[float]:
     if _bert_model is None:
         from bert_score import BERTScorer
 
-        _bert_model = BERTScorer(lang="en")
+        # Baseline rescaling (BERTScore paper): raw roberta-large scores sit in
+        # ~0.85-1.0 even for unrelated text; rescaling spreads them (pair order kept).
+        _bert_model = BERTScorer(lang="en", rescale_with_baseline=True)
     cands = [render_text(a) for a, b in pairs]
     refs = [render_text(b) for a, b in pairs]
     _, _, f1 = _bert_model.score(cands, refs)
-    return [float(x) for x in f1]
+    # rescaled text less similar than the baseline goes below 0: floor it at an omission's 0
+    return [max(0.0, float(x)) for x in f1]
 
 
 def _bertscore(a: Any, b: Any) -> float:
