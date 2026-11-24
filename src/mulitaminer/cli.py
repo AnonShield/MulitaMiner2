@@ -317,6 +317,41 @@ def evaluate(
 
 
 @app.command()
+def errors(
+    run_dir: Path = typer.Argument(..., help="An evaluated run directory (evaluation.json)"),
+    baseline: Path | None = typer.Option(
+        None, "--baseline", "-b", help="Baseline XLSX (default: the one in evaluation.json)"),
+    pdf: Path | None = typer.Option(
+        None, "--pdf", help="Report PDF (default: the input recorded in run.json)"),
+) -> None:
+    """Classify each extracted item: correct, copied off, paraphrase, invented,
+    omitted, extra. Writes errors.json next to evaluation.json."""
+    import json
+
+    from mulitaminer.evaluation.errors import CATEGORIES, classify_run, write_errors
+    from mulitaminer.pdf_reader import extract_pdf
+
+    run_dir = Path(run_dir)
+    if not (run_dir / "evaluation.json").is_file():
+        ui.error(f"{run_dir} has no evaluation.json; run `mulitaminer evaluate` first.")
+        raise typer.Exit(code=1)
+    ev = json.loads((run_dir / "evaluation.json").read_text(encoding="utf-8"))
+    run = json.loads((run_dir / "run.json").read_text(encoding="utf-8")) \
+        if (run_dir / "run.json").is_file() else {}
+    baseline = baseline or Path(ev["meta"]["baseline"])
+    pdf = pdf or Path(run.get("config", {}).get("input", ""))
+    if not baseline.is_file() or not pdf.is_file():
+        ui.error("baseline or PDF not found; pass --baseline and --pdf.")
+        raise typer.Exit(code=1)
+    result = classify_run(run_dir, baseline, extract_pdf(pdf).text)
+    path = write_errors(run_dir, result)
+    ui.echo("| field | " + " | ".join(CATEGORIES) + " |")
+    for field, c in sorted(result["counts"].items()):
+        ui.echo(f"| {field} | " + " | ".join(str(c.get(k, 0)) for k in CATEGORIES) + " |")
+    ui.echo(f"errors: {path}")
+
+
+@app.command()
 def experiment(
     reports: Path = typer.Argument(
         ..., exists=True, help="A PDF, or a directory searched recursively for PDFs"

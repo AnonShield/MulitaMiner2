@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import statistics
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -88,6 +88,7 @@ def _aggregate(experiment_dir: Path) -> dict:
     sev_by_scanner: dict = defaultdict(lambda: defaultdict(int))  # scanner -> sev -> count
     sev_seen: set = set()                                         # targets already counted
     detail: dict = defaultdict(_new_detail)   # (t,m) -> drill-down payload
+    errtax: dict = defaultdict(lambda: defaultdict(Counter))  # (t,m) -> field -> category -> n
     threshold = None                          # alignment cutoff, from any evaluation
 
     for r in manifest["runs"]:
@@ -122,6 +123,10 @@ def _aggregate(experiment_dir: Path) -> dict:
             cov[key]["cost"].append(r["cost_usd"])
         if "duration_s" in r:
             cov[key]["duration"].append(r["duration_s"])
+        erp = Path(r["run_dir"]) / "errors.json"   # written by `mulitaminer errors`
+        if erp.is_file():
+            for field, c in json.loads(erp.read_text(encoding="utf-8")).get("counts", {}).items():
+                errtax[key][field].update(c)
         ep = Path(r["run_dir"]) / "evaluation.json"
         if not ep.is_file():
             continue
@@ -226,6 +231,9 @@ def _aggregate(experiment_dir: Path) -> dict:
         "dist": dist_box(text_present),
         "dist_by_target": dist_box_bt(text_present),
         "detail": detail_out, "threshold": threshold,
+        "errtax": {"fields": sorted({f for c in errtax.values() for f in c}),
+                   "by_target": {t: {m: {f: dict(c) for f, c in errtax[(t, m)].items()}
+                                     for m in models if (t, m) in errtax} for t in tsorted}},
     }
 
 
@@ -395,7 +403,7 @@ _BODY = r"""
 
 <nav>
   <a href="#coverage">Coverage</a><a href="#dataset">Dataset</a><a href="#consistency">By report</a>
-  <a href="#fields">Field quality</a><a href="#omission">Omission</a>
+  <a href="#fields">Field quality</a><a href="#omission">Omission</a><a href="#errtax">Error types</a>
   <a href="#dist">Distribution</a><a href="#errors">Errors &amp; cost</a>
 </nav>
 
@@ -470,6 +478,25 @@ _BODY = r"""
     <div class="card-t">Field omission <span class="dlwrap" id="dl_omheat"></span></div>
     <div class="htab-wrap"><div id="omheat"></div></div>
     <div class="legend" id="omLegend"></div>
+  </div>
+</section>
+
+<section id="errtax" style="display:none">
+  <div class="kick">Error types</div>
+  <h2>What kind of mistakes each model makes</h2>
+  <p class="sub">Each extracted item (paragraph, line, reference) checked against the gold and the report
+     text: <b>correct</b> = in the gold; <b>instruction ignored</b> = right content, but a label the prompt says to
+     strip was kept; <b>copied off</b> = copied from the report but not part of this
+     field in the gold; <b>paraphrase</b> / <b>invented</b> = in neither, close to the gold or not; gold
+     items the extraction lacks are <b>omitted</b>. From <code>mulitaminer errors</code> on each run.</p>
+  <div class="ctlbar">
+    <span class="toggle" id="etField"><span class="lb">Field</span></span>
+    <span class="selg"><span class="lb">Report</span><select id="etScope"></select></span>
+  </div>
+  <div class="card">
+    <div class="card-t">Share of items per category <span class="dlwrap" id="dl_errtax"></span></div>
+    <div id="errtaxBar"></div>
+    <div class="legend" id="errtaxLegend"></div>
   </div>
 </section>
 
@@ -909,6 +936,33 @@ el('cost').innerHTML=M.map(m=>{const c=OV[m].cost.m,d=OV[m].duration.m;
   return `<div class="card" style="margin:0"><div class="card-t" style="margin:0 0 .4rem">${esc(m)}</div>
     <div style="font:700 1.05rem ui-monospace,monospace;color:${MC[m]}">${c?'$'+c.toFixed(4):'-'}</div>
     <div style="font:.65rem ui-monospace,monospace;color:var(--muted)">${d!=null?Math.round(d)+'s/run':''}</div></div>`;}).join('');
+
+// ---- error types per model (100% stacked; `extra` overlaps the others, so tooltip only) ----
+(function(){
+  const ET=DATA.errtax||{},F=ET.fields||[];
+  if(!F.length)return;
+  el('errtax').style.display='';
+  const CATS=['correct','instruction_ignored','copied_off','paraphrase','invented','omitted'],
+        LAB={correct:'correct',instruction_ignored:'instruction ignored',copied_off:'copied off',paraphrase:'paraphrase',invented:'invented',omitted:'omitted'},
+        COL={correct:'#008300',instruction_ignored:'#7fc97f',copied_off:'#d9a200',paraphrase:'#2a78d6',invented:'#c81d54',omitted:'var(--muted)'};
+  let field='all',scope='all reports';
+  function render(){
+    const tg=scope==='all reports'?TGT:[scope];
+    const rows=M.map(m=>{const c={};
+      tg.forEach(t=>{const fm=((ET.by_target[t]||{})[m])||{};
+        Object.entries(fm).forEach(([f,cc])=>{if(field!=='all'&&f!==field)return;
+          Object.entries(cc).forEach(([k,v])=>c[k]=(c[k]||0)+v);});});
+      const n=CATS.reduce((a,k)=>a+(c[k]||0),0);
+      return{label:`${m} · n=${n}`,vals:CATS.map(k=>n?(c[k]||0)/n:0),n};}).filter(r=>r.n);
+    el('errtaxBar').innerHTML=rows.length?hStack(rows,CATS.map(k=>LAB[k]),CATS.map(k=>COL[k]),{W:760,rowH:36,padL:190})
+      :'<div class="empty">no items for this field/report</div>';
+  }
+  toggle('etField',['all',...F],field,v=>{field=v;render();});
+  fillSel('etScope',['all reports',...TGT],v=>{scope=v;render();});
+  legend('errtaxLegend',CATS.map(k=>[LAB[k],COL[k]]));
+  mkDL('dl_errtax','errtaxBar','error-types','errtaxLegend');
+  render();
+})();
 
 // ---- severity composition per scanner (100% stacked) ----
 (function(){
