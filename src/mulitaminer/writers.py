@@ -4,9 +4,12 @@ Columns are derived from the record model; never hardcoded.
 """
 from __future__ import annotations
 
+import copy
 import json
 import logging
 from pathlib import Path
+
+from pydantic import BaseModel
 
 from mulitaminer.models import VulnRecord
 
@@ -30,16 +33,20 @@ def columns_for(record_type: type[VulnRecord]) -> list[str]:
     return _source_last([f.alias or name for name, f in record_type.model_fields.items()])
 
 
+def _all_record_types() -> list[type[VulnRecord]]:
+    from mulitaminer.scanner_engine import all_scanners
+
+    return [p.record_type for p in all_scanners().values()]
+
+
 def unified_columns(record_types: list[type[VulnRecord]] | None = None) -> list[str]:
-    """Union of output columns across scanners, so every scanner's tabular output
-    is structurally identical (empty where a scanner doesn't fill a column). Core
+    """Union of output columns across scanners, so every scanner's output is
+    structurally identical (empty where a scanner doesn't fill a column). Core
     (VulnRecord) columns first in schema order, then scanner-specific extras in a
     stable order. Pass explicit record_types for testing; default is every
     registered scanner."""
     if record_types is None:
-        from mulitaminer.scanner_engine import all_scanners
-
-        record_types = [p.record_type for p in all_scanners().values()]
+        record_types = _all_record_types()
     cols = columns_for(VulnRecord)
     seen = set(cols)
     for record_type in sorted(record_types, key=lambda t: t.__name__):
@@ -50,10 +57,36 @@ def unified_columns(record_types: list[type[VulnRecord]] | None = None) -> list[
     return _source_last(cols)
 
 
+def _empty_values() -> dict[str, object]:
+    """Value for a union column a record lacks: [] when every scanner declaring it
+    uses a list, {} for objects, None otherwise (e.g. cvss, a number in OpenVAS
+    and a list in Nessus)."""
+    defaults: dict[str, list] = {}
+    for record_type in _all_record_types():
+        for name, f in record_type.model_fields.items():
+            if not f.is_required():
+                defaults.setdefault(f.alias or name, []).append(f.get_default(call_default_factory=True))
+    empty: dict[str, object] = {}
+    for col, values in defaults.items():
+        if all(isinstance(v, list) for v in values):
+            empty[col] = []
+        elif all(isinstance(v, (dict, BaseModel)) for v in values):
+            empty[col] = {}
+        else:
+            empty[col] = None
+    return empty
+
+
 def write_json(records: list[VulnRecord], path: Path) -> None:
-    path.write_text(
-        json.dumps(_dump(records), ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    """Every record carries the union of all scanners' fields, so results from
+    different scanners share one schema."""
+    cols, empty = unified_columns(), _empty_values()
+    rows = []
+    for d in _dump(records):
+        row = {c: d[c] if c in d else copy.deepcopy(empty.get(c)) for c in cols}
+        row.update({k: v for k, v in d.items() if k not in row})  # undeclared extras kept as-is
+        rows.append({k: row[k] for k in _source_last(list(row))})
+    path.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
     log.info("Wrote %d records to %s", len(records), path)
 
 

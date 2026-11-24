@@ -36,6 +36,20 @@ def test_json_round_trip(tmp_path):
     assert data[0]["source"] == "OPENVAS"
 
 
+def test_json_carries_every_scanner_field(tmp_path):
+    """results.json has the same keys for every scanner; a field the scanner does
+    not have comes out empty, never missing."""
+    out = tmp_path / "results.json"
+    write_json(RECORDS, out)
+    row = json.loads(out.read_text(encoding="utf-8"))[0]
+    assert list(row) == unified_columns()
+    assert row["instances"] == []          # ZAP/Tenable list field
+    assert row["plugin_details"] == {}     # Nessus/Tenable object field
+    assert row["category"] is None         # Qualys scalar field
+    assert row["cvss"] == 7.5              # the record's own value is kept
+    assert row["description"] == ["first", "second"]
+
+
 def test_xlsx_and_csv_write(tmp_path):
     import pandas as pd
 
