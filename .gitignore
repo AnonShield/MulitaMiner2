@@ -37,3 +37,6 @@ analysis_reports/
 
 # Local experiment scripts and baseline builders
 experiments/
+
+# Thesis sources and PDFs, kept local
+tcc/
