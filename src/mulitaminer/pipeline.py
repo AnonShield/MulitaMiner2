@@ -129,6 +129,7 @@ def run(config: RunConfig, client: LLMClient | None = None,
     extraction of the same file). ``progress`` receives lifecycle events for a
     live view; the default sink does nothing."""
     started = time.perf_counter()
+    started_at = datetime.now().astimezone().isoformat(timespec="seconds")
     progress = progress or NULL_PROGRESS
     profile = get_scanner(config.scanner)
     if client is None:
@@ -187,6 +188,8 @@ def run(config: RunConfig, client: LLMClient | None = None,
             retries=full_retries(retries),
             usage=usage,
             duration_s=round(time.perf_counter() - started, 2),
+            started_at=started_at,
+            finished_at=datetime.now().astimezone().isoformat(timespec="seconds"),
             block_count=len(blocks),
             chunk_count=0,  # informational; per-round chunking varies
             config=config.snapshot(),
@@ -209,6 +212,8 @@ def run(config: RunConfig, client: LLMClient | None = None,
                     "raw_record_count": raw_count,
                     "final_record_count": len(records),
                     "usage": usage.model_dump(),
+                    "started_at": result.started_at,
+                    "finished_at": result.finished_at,
                     "duration_s": result.duration_s,
                     "warnings": warnings,
                     "drops": full_drops(drops),

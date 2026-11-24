@@ -131,6 +131,7 @@ class TokenUsage(BaseModel):
     completion_tokens: int = 0
     calls: int = 0
     cost_usd: float = 0.0
+    cached_tokens: int = 0         # input tokens the provider served from its cache
     # Every numeric field the provider reported, summed verbatim across calls.
     # cost_usd is one price table applied to two token counts; providers bill on
     # more than that (cache hits, tiers), so keep the raw counters to reprice a
@@ -138,11 +139,12 @@ class TokenUsage(BaseModel):
     provider: dict = {}
 
     def add(self, prompt: int, completion: int, cost: float,
-            provider: dict | None = None) -> None:
+            provider: dict | None = None, cached: int = 0) -> None:
         self.prompt_tokens += prompt
         self.completion_tokens += completion
         self.calls += 1
         self.cost_usd += cost
+        self.cached_tokens += cached
         for name, value in (provider or {}).items():
             self.provider[name] = self.provider.get(name, 0) + value
 
@@ -179,6 +181,8 @@ class RunResult(BaseModel):
     retries: dict = {}  # chunk retries by reason (bad_json, bad_shape)
     usage: TokenUsage = Field(default_factory=TokenUsage)
     duration_s: float = 0.0
+    started_at: str = ""   # local time with UTC offset, ISO 8601
+    finished_at: str = ""
     block_count: int = 0
     chunk_count: int = 0
     config: dict = {}

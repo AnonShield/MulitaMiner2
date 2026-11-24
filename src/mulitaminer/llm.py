@@ -249,7 +249,7 @@ class LLMClient:
         call = self._package(getattr(response, "usage", None), raw)
         if usage is not None:
             usage.add(call["prompt_tokens"], call["completion_tokens"],
-                      call["cost_usd"], call["provider"])
+                      call["cost_usd"], call["provider"], cached=call["cached_tokens"])
 
         cleaned = clean_response(raw, self.profile.reasoning_tags)
         data = json.loads(cleaned)
@@ -285,6 +285,7 @@ class LLMClient:
     def _package(self, usage, raw: str) -> dict:
         prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
         completion_tokens = getattr(usage, "completion_tokens", 0) or 0
+        counters = _provider_counters(usage)
         cost = (
             prompt_tokens / 1e6 * self.profile.price_in
             + completion_tokens / 1e6 * self.profile.price_out
@@ -293,7 +294,10 @@ class LLMClient:
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
             "cost_usd": cost,
-            "provider": _provider_counters(usage),
+            # DeepSeek reports cache hits at the top level, OpenAI under prompt_tokens_details.
+            "cached_tokens": int(counters.get("prompt_cache_hit_tokens")
+                                 or counters.get("prompt_tokens_details.cached_tokens") or 0),
+            "provider": counters,
             "raw": raw,
         }
 

@@ -115,11 +115,17 @@ def extract(
         ui.error(exc)
         raise typer.Exit(code=1)
 
+    u = result.usage
+    reasoning = int(u.provider.get("completion_tokens_details.reasoning_tokens", 0))
+    cost = (f"${u.cost_usd:.4f} (estimate at the profile's prices)"
+            if u.cost_usd else "$0 (local model)")
+    m, s = divmod(round(result.duration_s), 60)
     ui.echo(
-        f"\n{len(result.records)} records ({result.block_count} blocks) in "
-        f"{result.duration_s}s; ${result.usage.cost_usd:.4f} "
-        f"({result.usage.prompt_tokens}+{result.usage.completion_tokens} tokens, "
-        f"{result.usage.calls} calls)"
+        f"\n{len(result.records)} records ({result.block_count} blocks), {u.calls} calls\n"
+        f"time: {result.started_at} -> {result.finished_at} ({m // 60}h{m % 60:02d}m{s:02d}s)\n"
+        f"tokens: input {u.prompt_tokens:,} ({u.cached_tokens:,} cached), "
+        f"output {u.completion_tokens:,} ({reasoning:,} reasoning)\n"
+        f"cost: {cost}"
     )
     total_drops = sum(result.drops.values())
     detail = ", ".join(f"{k}={v}" for k, v in result.drops.items())

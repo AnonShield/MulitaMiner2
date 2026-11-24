@@ -72,6 +72,15 @@ def test_extract_parses_validates_and_accounts_usage():
     assert transport.last_kwargs["temperature"] == 0.0
 
 
+def test_cached_tokens_read_from_either_provider_field():
+    client = LLMClient(MODELS["deepseek"], transport=FakeTransport("{}"))
+    for fields_ in ({"prompt_tokens": 10, "completion_tokens": 1, "prompt_cache_hit_tokens": 6},
+                    {"prompt_tokens": 10, "completion_tokens": 1,
+                     "prompt_tokens_details": {"cached_tokens": 6}}):
+        usage = SimpleNamespace(**fields_, model_dump=lambda f=fields_: f)  # SDK usage objects dump
+        assert client._package(usage, "")["cached_tokens"] == 6
+
+
 def test_extract_uses_json_schema_when_supported():
     transport = FakeTransport('{"items": []}')
     client = LLMClient(MODELS["gpt-4o-mini"], transport=transport)
