@@ -1,6 +1,6 @@
 {
-  "key": "mulita-qwen2.5-1.5b-v4",
-  "model": "mulita-qwen2.5-1.5b-v4",
+  "key": "mulita-extractor",
+  "model": "mulita-extractor-v7",
   "base_url": "http://localhost:11434/v1",
   "context_window": 16000,
   "max_output_tokens": 8000,

@@ -63,7 +63,7 @@ MODEL_LABELS = {
     "gpt-4o-mini": "GPT-4o mini",
     "haiku": "Claude Haiku 4.5",
     "llama-3.3-70b": "Llama 3.3 70B",
-    "mulita-qwen2.5-1.5b-v4": "Mulita 1.5B (fine-tuned)",
+    "mulita-extractor": "Mulita-Extractor 1.5B (fine-tuned)",
     "qwen2.5-1.5b": "Qwen2.5 1.5B (base)",
 }
 # Provider name and where to create a key, by the env var the profile names.
