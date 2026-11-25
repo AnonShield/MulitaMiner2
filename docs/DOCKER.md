@@ -1,6 +1,6 @@
 # Docker
 
-Docker Compose serves the fine-tuned local model (`mulita-qwen2.5-1.5b-v4`,
+Docker Compose serves the fine-tuned local model (Mulita-Extractor, `mulita-extractor-v7`
 on Ollama) and runs the `mulitaminer` CLI against it, with nothing installed
 on the host except Docker.
 
@@ -21,8 +21,8 @@ on the host except Docker.
 and registers it in Ollama; later calls reuse all of it.
 
 ```bash
-docker compose run --rm mulita extract resources/openvas/OpenVAS_JuiceShop.pdf --model mulita-qwen2.5-1.5b-v4
-docker compose run --rm mulita experiment resources --models mulita-qwen2.5-1.5b-v4,deepseek --runs 5 --output-dir outputs/experiments
+docker compose run --rm mulita extract resources/openvas/OpenVAS_JuiceShop.pdf --model mulita-extractor
+docker compose run --rm mulita experiment resources --models mulita-extractor,deepseek --runs 5 --output-dir outputs/experiments
 docker compose run --rm mulita --help
 ```
 
@@ -54,7 +54,7 @@ To skip the two `-f` flags on a machine that always uses the GPU, put
 On the CPU the model works but is much slower (about 13 minutes for the
 34-finding `OpenVAS_JuiceShop.pdf` on a desktop CPU), and the default 120 s
 request timeout can cut healthy calls short. Raise `request_timeout_s` in
-`src/mulitaminer/configs/llms/mulita-qwen2.5-1.5b-v4.json` and rebuild
+`src/mulitaminer/configs/llms/mulita-extractor.json` and rebuild
 (see [ADDING_A_MODEL.md](ADDING_A_MODEL.md)).
 
 ### API keys
@@ -73,7 +73,7 @@ model whose key is missing. Keys passed on the command line do not reach the con
 | --- | --- | --- |
 | `ollama` | `ollama/ollama:0.34.0` | Model server (CPU, or GPU with `docker-compose.gpu.yml`). Not published on the host, so it does not clash with a local Ollama on 11434 |
 | `model-fetch` | `python:3.11-slim` | Runs `tools/fetch_model.py`: downloads the GGUF and `Modelfile` from [Hugging Face](https://huggingface.co/Inari18/mulita-extractor-qwen2.5-1.5b) at a pinned commit and checks the GGUF's sha256 |
-| `model-register` | `ollama/ollama:0.34.0` | `ollama create mulita-qwen2.5-1.5b-v4 -f Modelfile`, then exits |
+| `model-register` | `ollama/ollama:0.34.0` | `ollama create mulita-extractor-v7 -f Modelfile`, then exits |
 | `mulita` | built from `Dockerfile` | The CLI; `run` starts the three above first |
 
 Two things are pinned on purpose:

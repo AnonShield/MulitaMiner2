@@ -1,8 +1,8 @@
-# Serves the fine-tuned v4 model with Ollama and runs the mulitaminer CLI
+# Serves the fine-tuned v7 model with Ollama and runs the mulitaminer CLI
 # against it, with nothing installed on the host but Docker.
 #
 #   docker compose run --rm mulita <any mulitaminer command>
-#   docker compose run --rm mulita extract resources/openvas/OpenVAS_JuiceShop.pdf --model mulita-qwen2.5-1.5b-v4
+#   docker compose run --rm mulita extract resources/openvas/OpenVAS_JuiceShop.pdf --model mulita-extractor
 #
 # Ollama runs on the CPU unless the container is handed an NVIDIA GPU; Compose
 # cannot do that conditionally, so docker-compose.gpu.yml adds it:
@@ -51,7 +51,7 @@ services:
     network_mode: "service:ollama"   # the CLI talks to the server on localhost:11434
     volumes:
       - model:/model:ro
-    entrypoint: ["ollama", "create", "mulita-qwen2.5-1.5b-v4", "-f", "/model/Modelfile"]
+    entrypoint: ["ollama", "create", "mulita-extractor-v7", "-f", "/model/Modelfile"]
 
   mulita:
     # The CLI. No default command: `docker compose run --rm mulita <command>`,

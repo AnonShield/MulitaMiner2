@@ -1,13 +1,13 @@
-"""Download the pinned v4 GGUF + Modelfile from Hugging Face into a directory."""
+"""Download the pinned v7 GGUF + Modelfile from Hugging Face into a directory."""
 import hashlib
 import sys
 import urllib.request
 from pathlib import Path
 
 REPO = "Inari18/mulita-extractor-qwen2.5-1.5b"
-REVISION = "f8baab17d52c71747e0c9718844966fd8a02a4ef"
-GGUF = "mulita-qwen2.5-1.5b-v4.gguf"
-GGUF_SHA256 = "610aa2014ab49e3be045591c62982d7b40f05e7f8cd4b0c1b3fd0e5bcbadeb29"
+REVISION = "69fcdf70e4c6f28cb103719c43eeed7af12da6cd"
+GGUF = "mulita-extractor-v7.gguf"
+GGUF_SHA256 = "76ff8228b119c460523dbb018e81e205d3c2dea7a29564a94f831cc50ae4957c"
 
 
 def sha256(path: Path) -> str:

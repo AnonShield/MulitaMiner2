@@ -41,7 +41,7 @@ built-in `haiku.json` (`base_url` `https://api.anthropic.com/v1/`, key in
 
 Ollama and LM Studio expose an OpenAI-compatible server on localhost and need
 no key: local configs simply **have no `api_key_env` field**. The built-in
-local profiles (`qwen2.5-1.5b`, the base model, and `mulita-qwen2.5-1.5b-v4`,
+local profiles (`qwen2.5-1.5b`, the base model, and `mulita-extractor`,
 its [fine-tuned version](../README.md#fine-tuned-local-model)) point at the
 Ollama endpoint; `--model-name` overrides the provider model id at runtime
 when the server hosts something else.

@@ -150,7 +150,7 @@ scanners; `-s` forces one for the whole batch
 
 ## Fine-tuned local model
 
-`mulita-qwen2.5-1.5b-v4` is a Qwen2.5-1.5B fine-tuned for this tool's
+Mulita-Extractor is a Qwen2.5-1.5B fine-tuned for this tool's
 extraction task, published on
 [Hugging Face](https://huggingface.co/Inari18/mulita-extractor-qwen2.5-1.5b)
 with its evaluation. It runs on Ollama, fully offline. Register it with the
@@ -159,8 +159,8 @@ structured fields (`hf` comes with `pip install huggingface_hub`):
 
 ```bash
 hf download Inari18/mulita-extractor-qwen2.5-1.5b --local-dir mulita-model
-cd mulita-model && ollama create mulita-qwen2.5-1.5b-v4 -f Modelfile && cd ..
-uv run mulitaminer extract resources/openvas/OpenVAS_JuiceShop.pdf --model mulita-qwen2.5-1.5b-v4
+cd mulita-model && ollama create mulita-extractor-v7 -f Modelfile && cd ..
+uv run mulitaminer extract resources/openvas/OpenVAS_JuiceShop.pdf --model mulita-extractor
 ```
 
 ## Docker
@@ -169,7 +169,7 @@ With Docker alone, no Python or Ollama on the host: Compose downloads the
 model, serves it and runs any `mulitaminer` command against it.
 
 ```bash
-docker compose run --rm mulita extract resources/openvas/OpenVAS_JuiceShop.pdf --model mulita-qwen2.5-1.5b-v4
+docker compose run --rm mulita extract resources/openvas/OpenVAS_JuiceShop.pdf --model mulita-extractor
 ```
 
 Results land in `outputs/` as usual. API keys, the NVIDIA GPU and the rest

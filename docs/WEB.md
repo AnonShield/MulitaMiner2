@@ -41,7 +41,7 @@ With Docker, including the fine-tuned local model served by Ollama
 docker compose -f docker-compose.yml -f docker-compose.web.yml up web
 ```
 
-Same address. The v4 model appears in the model list as `mulita-qwen2.5-1.5b-v4`
+Same address. The fine-tuned model appears in the model list as `mulita-extractor`
 (local, no key). Without a GPU it runs on the CPU and is slow.
 
 ## Without cloning: the published image
